@@ -1,5 +1,5 @@
 ---
-name: dq-audit
+name: dq-pipeline
 description: Vstupní bod a společný standard pipeline pro řízení kvality dat v libovolné databázi (MySQL, PostgreSQL, SQL Server, Oracle, SQLite, DuckDB) — DQ dimenze, formát zjištění, škála závažnosti, mapování schématu na role, přenositelnost SQL a doménových pravidel. Použij, když se má "udělat audit databáze", "zkontrolovat kvalitu dat", "vyčistit databázi", "najít chyby v datech", nebo když nevíš, kterým krokem pipeline začít. Keywords: audit kvality dat, data quality, DQ, profiling, zpráva auditora, nápravná opatření, čištění dat, data cleansing.
 ---
 

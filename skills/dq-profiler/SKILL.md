@@ -10,7 +10,7 @@ víš, co v tabulkách vůbec je. Profiler končí seznamem tabulek, jejich rol�
 podezření, které validator ověří.
 
 Pipeline: **dq-profiler** → `dq-validator` → `dq-auditor` → remediace. Společný standard
-(dimenze, formát zjištění) je v `dq-audit`.
+(dimenze, formát zjištění) je v `dq-pipeline`.
 
 ## Krok 1 — inventura a role tabulek
 

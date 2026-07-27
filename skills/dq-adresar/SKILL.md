@@ -1,6 +1,6 @@
 ---
 name: dq-adresar
-description: Napojení adres na adresní registr (RÚIAN/UIR-ADR) — stavba match code, hierarchie indexů podle přesnosti (budova, ulice, obec), fuzzy párování bez diakritiky, měření match rate, řešení collation a rozsahových mezer registru (P.O. Box), přiřazení kódu adresního bodu. Krok remediace mezi dq-standardizator a dq-imputator. Použij, když se má "napojit adresy na registr", "spárovat s RÚIAN", "geokódovat", "doplnit kód adresy", "ověřit doručitelnost adresy". Keywords: RÚIAN, UIR-ADR, adresní registr, match code, adresa_kod, geokódování, párování adres, doručitelnost, ADDR_CODE.
+description: Napojení adres na adresní registr (RÚIAN, UIR-ADR nebo jakýkoli národní address registry) — stavba match code, hierarchie indexů podle přesnosti (budova, ulice, obec), fuzzy párování bez diakritiky, měření match rate, řešení collation a rozsahových mezer registru (P.O. Box), přiřazení kódu adresního bodu a příznaku doručitelnosti. Krok remediace mezi dq-standardizator a dq-imputator. Použij vždy, když se pracuje s adresami a je potřeba je "napojit na registr", "spárovat s RÚIAN", "geokódovat", "doplnit kód adresy", "ověřit doručitelnost", "zjistit kolik adres je validních" — i když uživatel registr nepojmenuje. Keywords: RÚIAN, UIR-ADR, adresní registr, address registry, match code, adresa_kod, geokódování, párování adres, doručitelnost, match rate.
 ---
 
 # Adresář — napojení na adresní registr

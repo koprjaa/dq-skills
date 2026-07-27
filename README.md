@@ -21,7 +21,7 @@ dq-parser → dq-standardizator → dq-adresar → dq-imputator → dq-deduplika
 
 | Skill | Co dělá |
 |---|---|
-| **dq-audit** | vstupní bod: DQ dimenze, formát zjištění, přenositelnost SQL i doménových pravidel |
+| **dq-pipeline** | vstupní bod: DQ dimenze, formát zjištění, přenositelnost SQL i doménových pravidel |
 | **dq-profiler** | inventura, struktura, collation, PK/FK, distribuce, katalog vzorců defektů |
 | **dq-validator** | kontroly po šesti dimenzích, checksum validátory, zápis skóre do metadatového repozitáře |
 | **dq-auditor** | katalog zjištění, root-cause, COPQ a ROI, legislativní kontext, prioritizace |
@@ -57,16 +57,16 @@ vyčisti a zdeduplikuj klientský kmen
 
 Nebo explicitně: `/dq-profiler`, `/dq-validator`, …
 
-Když nevíš, kterým krokem začít, spusť `dq-audit` — je to mapa pipeline a společný standard.
+Když nevíš, kterým krokem začít, spusť `dq-pipeline` — je to mapa pipeline a společný standard.
 
 ## Podporované databáze
 
-SQL v katalozích je psané pro MySQL; `dq-audit` obsahuje překladovou tabulku pro PostgreSQL,
+SQL v katalozích je psané pro MySQL; `dq-pipeline` obsahuje překladovou tabulku pro PostgreSQL,
 SQL Server, Oracle, SQLite a DuckDB (regex, metadata, hash, podmíněné agregace, collation).
 
 Doménové validátory (rodné číslo, IČO, PSČ, RÚIAN, CZ-NACE) jsou příkladem pro ČR — struktura
 kontroly zůstává, konkrétní pravidla se nahrazují ekvivalentem jurisdikce podle mapovací
-tabulky v `dq-audit`.
+tabulky v `dq-pipeline`.
 
 ## Zásady, na kterých to stojí
 

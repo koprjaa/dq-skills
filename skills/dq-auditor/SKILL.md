@@ -8,7 +8,7 @@ description: Zpráva auditora kvality dat — katalog zjištění se závažnost
 Validator dodal čísla. Auditor z nich udělá **rozhodnutí**: co to firmu stojí, proč to vzniklo
 a v jakém pořadí to opravit. Zpráva bez korunové částky a bez příčiny je jen výpis dotazů.
 
-Pipeline: `dq-validator` → **dq-auditor** → remediace (`dq-parser`…). Standard v `dq-audit`.
+Pipeline: `dq-validator` → **dq-auditor** → remediace (`dq-parser`…). Standard v `dq-pipeline`.
 
 ## Struktura zprávy
 
@@ -39,7 +39,7 @@ audit platí ke snapshotu, k danému rozsahu a s danými zdroji. Bez toho je zpr
 |---|---|---|
 | 1 | Plánování a rozsah | vymezení univerza: provozní tabulky + podpůrné číselníky a registry |
 | 2 | Kontrolní rámec | referenční standardy: právní normy, státní registry, interní číselníky |
-| 3 | Měřené charakteristiky | šest dimenzí (viz `dq-audit`) |
+| 3 | Měřené charakteristiky | šest dimenzí (viz `dq-pipeline`) |
 | 4 | Identifikace užití dat | matice užití: atribut → byznys proces |
 | 5 | Metadatový repozitář | `information_schema` + sloupce pro naměřené dimenze |
 | 6 | Profiling a validace | `dq-profiler` + `dq-validator` |
@@ -60,7 +60,7 @@ Interpretační odstavce jsou to, co odlišuje zprávu od výpisu. Skládej je t
 řádcích: „Identifikace klienta a křížová konzistence", „Nefunkční komunikační kanály",
 „Porušení atomičnosti a nemožnost validace", „Sirotci a historický import".
 
-Ke každému velkému nálezu připoj **křížovou kontrolu** s příponou `b` (viz `dq-audit`).
+Ke každému velkému nálezu připoj **křížovou kontrolu** s příponou `b` (viz `dq-pipeline`).
 Nález `A1` (konstanta „CZE") je podezření; `A1b` (2 633 klientů s literálem „cizinec" v rodném
 čísle a u všech 100 % země „CZE") je důkaz.
 

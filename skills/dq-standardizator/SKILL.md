@@ -9,7 +9,7 @@ Druhý krok remediace. Data už jsou atomická (`dq-parser`). Teď každý atrib
 kanonický tvar** a napojení na referenční slovník. Bez toho neproběhne ani imputace, ani
 deduplikace: `MuDr` a `MUDr.` jsou pro stroj dvě různé hodnoty.
 
-Pipeline: `dq-parser` → **dq-standardizator** → `dq-imputator` → `dq-deduplikator`.
+Pipeline: `dq-parser` → **dq-standardizator** → `dq-adresar` → `dq-imputator` → `dq-deduplikator`.
 
 ## Konvence
 

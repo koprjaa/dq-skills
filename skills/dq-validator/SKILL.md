@@ -1,6 +1,6 @@
 ---
 name: dq-validator
-description: Validace dat a měření DQ metrik — kontroly po dimenzích (úplnost, syntaktická a sémantická správnost, vnitřní a vnější konzistentnost, unikátnost) nad provozními tabulkami, číselníky i referenčními registry, včetně CZ validátorů (rodné číslo mod 11, IČO, PSČ, e-mail, telefon) a zápisu skóre do metadatového repozitáře DQM_MDR. Druhý krok DQ pipeline, po dq-profiler, před dq-auditor. Použij, když se mají "spustit kontroly", "změřit kvalitu dat", "zvalidovat atributy", "spočítat DQ skóre", "najít nevalidní záznamy". Keywords: validace, kontroly, DQ metriky, regex validace, checksum, referenční integrita, DQM_MDR, úplnost, konzistentnost.
+description: Validace dat a měření metrik kvality v libovolné databázi — kontroly po šesti dimenzích (úplnost, syntaktická a sémantická správnost, vnitřní a vnější konzistentnost, unikátnost) nad provozními tabulkami, číselníky i referenčními registry, checksum validátory identifikátorů (rodné číslo, IČO, VAT, SSN), regex pravidla pro e-mail, telefon a poštovní kód, zápis skóre do metadatového repozitáře. Druhý krok DQ pipeline, po dq-profiler, před dq-auditor. Použij vždy, když se mají "spustit kontroly nad daty", "změřit kvalitu dat", "zvalidovat atributy", "spočítat DQ skóre", "najít nevalidní nebo nekonzistentní záznamy", "ověřit referenční integritu" — i když uživatel neřekne slovo validace. Keywords: validace, data validation, kontroly, DQ metriky, regex validace, checksum, mod 11, referenční integrita, sirotci, DQM_MDR, úplnost, konzistentnost, duplicity.
 ---
 
 # Validator — kontroly a měření
@@ -8,7 +8,7 @@ description: Validace dat a měření DQ metrik — kontroly po dimenzích (úpl
 Profiler řekl, co v datech je. Validator to **spočítá**. Každá kontrola vrací číslo, univerzum
 a příslušnost k dimenzi. Bez toho to není měření, ale dojem.
 
-Pipeline: `dq-profiler` → **dq-validator** → `dq-auditor`. Standard v `dq-audit`.
+Pipeline: `dq-profiler` → **dq-validator** → `dq-auditor`. Standard v `dq-pipeline`.
 Kompletní SQL katalog: `references/checks-sql.md`.
 
 ## Pravidla měření
@@ -110,7 +110,7 @@ klientských dat — a musí to být ve zprávě napsané, jinak se 100 % těcht
 
 Následující pravidla jsou vázaná na českou jurisdikci. **Struktura kontroly je univerzální**
 (formát → checksum → křížová konzistence s odvozenými atributy), konkrétní váhy a délky nahraď
-ekvivalentem cílové země — mapovací tabulka je v `dq-audit`, sekce Přenositelnost.
+ekvivalentem cílové země — mapovací tabulka je v `dq-pipeline`, sekce Přenositelnost.
 
 | Atribut | Pravidlo |
 |---|---|

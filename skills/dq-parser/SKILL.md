@@ -8,7 +8,7 @@ description: Parsing a atomizace dat — rozbití složených hodnot do dedikova
 První krok remediace. **Nic nestandardizuj, dokud to není atomické.** Standardizace pole
 `ADDR_STREET` obsahujícího „Na Budíně 854" nedá nic — registr adres zná ulici a číslo zvlášť.
 
-Pipeline: audit → **dq-parser** → `dq-standardizator` → `dq-imputator` → `dq-deduplikator`.
+Pipeline: audit → **dq-parser** → `dq-standardizator` → `dq-adresar` → `dq-imputator` → `dq-deduplikator`.
 
 ## Pravidla
 
