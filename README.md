@@ -5,6 +5,7 @@ Ten Claude Code skills that audit and clean data quality in any SQL database. Th
 ![claude-code](https://img.shields.io/badge/Claude%20Code-skills-D97757?style=flat-square)
 ![license](https://img.shields.io/badge/license-MIT-A31F34?style=flat-square)
 ![status](https://img.shields.io/badge/status-active-22863A?style=flat-square)
+[![ci](https://github.com/koprjaa/dq-skills/actions/workflows/ci.yml/badge.svg)](https://github.com/koprjaa/dq-skills/actions/workflows/ci.yml)
 
 The method comes from the course 4IZ562 Data Quality Management at Prague University of Economics and Business, and from an audit of 23 insurance company tables with 64 findings, a cost of poor quality estimate, and the corrective actions that followed. The skills are written without a domain. The defect patterns apply the same way to an online shop, a hospital, or a state registry.
 
@@ -72,7 +73,20 @@ The domain validators for birth number, company identifier, postal code, address
 
 ## Limits
 
-The skills contain documentation and SQL. They ship no runnable code and no tests. The skill files themselves are written in Czech.
+The skills contain documentation and SQL. They ship no runnable code, and the skill files themselves are written in Czech.
+
+## Development
+
+```bash
+uv run --extra dev ruff check .
+uv run --extra dev pytest -q
+```
+
+The suite checks the shape of each skill file rather than its content: that the
+frontmatter parses, that the name matches its directory, that the description is
+long enough to be matched on, and that every pipeline step is named in
+`dq-pipeline`. A skill with broken frontmatter is not loaded and not reported,
+so nothing tells you a step is missing until the pipeline silently skips it.
 
 ## License
 
