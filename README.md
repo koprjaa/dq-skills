@@ -1,81 +1,79 @@
 # dq-skills
 
-Sada Claude Code skillů pro **audit a čištění kvality dat v libovolné databázi**.
+Ten Claude Code skills that audit and clean data quality in any SQL database. They cover profiling an unknown database, measuring quality metrics, writing the audit report, then standardizing, imputing, deduplicating, and preventing repeat defects.
 
-Deset navazujících skillů: od profilingu neznámé databáze přes měření DQ metrik a zprávu
-auditora až po standardizaci, imputaci, deduplikaci a prevenci opakování chyb.
+![claude-code](https://img.shields.io/badge/Claude%20Code-skills-D97757?style=flat-square)
+![license](https://img.shields.io/badge/license-MIT-A31F34?style=flat-square)
+![status](https://img.shields.io/badge/status-active-22863A?style=flat-square)
 
-Metodicky vychází z kurzu 4IZ562 Řízení kvality dat (VŠE) a z reálného auditu 23 tabulek
-pojišťovny — 64 zjištění, kvantifikace COPQ a implementace nápravných opatření. Skilly jsou
-ale psané doménově nezávisle: vzorce defektů a postupy platí stejně pro e-shop, nemocnici
-nebo státní registr.
+The method comes from the course 4IZ562 Data Quality Management at Prague University of Economics and Business, and from an audit of 23 insurance company tables with 64 findings, a cost of poor quality estimate, and the corrective actions that followed. The skills are written without a domain. The defect patterns apply the same way to an online shop, a hospital, or a state registry.
 
 ## Pipeline
 
 ```
-dq-profiler → dq-validator → dq-auditor                    audit
-     ↓
-dq-parser → dq-standardizator → dq-adresar → dq-imputator → dq-deduplikator → dq-strazce
-                                                            remediace
+dq-profiler > dq-validator > dq-auditor                     audit
+     |
+dq-parser > dq-standardizator > dq-adresar > dq-imputator > dq-deduplikator > dq-strazce
+                                                            remediation
 ```
 
-| Skill | Co dělá |
+| Skill | Function |
 |---|---|
-| **dq-pipeline** | vstupní bod: DQ dimenze, formát zjištění, přenositelnost SQL i doménových pravidel |
-| **dq-profiler** | inventura, struktura, collation, PK/FK, distribuce, katalog vzorců defektů |
-| **dq-validator** | kontroly po šesti dimenzích, checksum validátory, zápis skóre do metadatového repozitáře |
-| **dq-auditor** | katalog zjištění, root-cause, COPQ a ROI, legislativní kontext, prioritizace |
-| **dq-parser** | atomizace složených hodnot (číslo domu z ulice, obec vs. městská část, jméno) |
-| **dq-standardizator** | kanonický tvar, napojení na referenční slovníky, display vs. match key |
-| **dq-adresar** | napojení na adresní registr, match code, hierarchie přesnosti, match rate |
-| **dq-imputator** | doplňování chybějících hodnot podle spolehlivosti zdroje — a kdy neimputovat |
-| **dq-deduplikator** | match code, klastry, survivor, golden record, household |
-| **dq-strazce** | datové typy, FK/CHECK, DQ firewall, monitoring, data governance |
+| `dq-pipeline` | Entry point. Quality dimensions, finding format, how to port the SQL and the domain rules. |
+| `dq-profiler` | Inventory, structure, collation, primary and foreign keys, distributions, defect pattern catalogue. |
+| `dq-validator` | Checks across six dimensions, checksum validators, writes the score to a metadata repository. |
+| `dq-auditor` | Finding catalogue, root cause, cost of poor quality and return on investment, legal context, priority. |
+| `dq-parser` | Splits composite values, such as house number out of street, municipality against district, person name. |
+| `dq-standardizator` | Canonical form, link to reference dictionaries, display value against match key. |
+| `dq-adresar` | Link to the address registry, match code, accuracy hierarchy, match rate. |
+| `dq-imputator` | Fills missing values by source reliability, and states when not to impute. |
+| `dq-deduplikator` | Match code, clusters, survivor selection, golden record, household. |
+| `dq-strazce` | Data types, foreign key and check constraints, quality firewall, monitoring, data governance. |
 
-Pořadí není libovolné: deduplikace před standardizací nesloučí `MuDr` a `MUDr.`, constrainty
-před remediací neprojdou.
+The order matters. Deduplication before standardization does not merge `MuDr` with `MUDr.`. Constraints before remediation fail.
 
-## Instalace
+## Install
 
 ```bash
 git clone https://github.com/koprjaa/dq-skills.git
 cp -R dq-skills/skills/* ~/.claude/skills/
 ```
 
-Projektová instalace (jen pro jeden repozitář): kopíruj do `.claude/skills/` v projektu.
+For one project only, copy into `.claude/skills/` inside that project.
 
-## Použití
+## Use
 
-Skilly se aktivují samy podle popisu. Stačí napsat, co chceš:
+The skills activate from their description. Write what you want:
 
 ```
-zprofiluj mi tuhle databázi
-změř kvalitu dat v tabulce zákazníků
-napiš zprávu auditora z toho, co jsi našel
-vyčisti a zdeduplikuj klientský kmen
+profile this database for me
+measure the data quality of the customer table
+write the audit report from what you found
+clean and deduplicate the client base
 ```
 
-Nebo explicitně: `/dq-profiler`, `/dq-validator`, …
+You can also call one directly with `/dq-profiler` or `/dq-validator`.
 
-Když nevíš, kterým krokem začít, spusť `dq-pipeline` — je to mapa pipeline a společný standard.
+Start with `dq-pipeline` when you do not know which step comes first. It holds the pipeline map and the shared standard.
 
-## Podporované databáze
+## Databases
 
-SQL v katalozích je psané pro MySQL; `dq-pipeline` obsahuje překladovou tabulku pro PostgreSQL,
-SQL Server, Oracle, SQLite a DuckDB (regex, metadata, hash, podmíněné agregace, collation).
+The SQL in the catalogues targets MySQL. `dq-pipeline` holds a translation table for PostgreSQL, SQL Server, Oracle, SQLite, and DuckDB. The table covers regular expressions, metadata, hashes, conditional aggregates, and collation.
 
-Doménové validátory (rodné číslo, IČO, PSČ, RÚIAN, CZ-NACE) jsou příkladem pro ČR — struktura
-kontroly zůstává, konkrétní pravidla se nahrazují ekvivalentem jurisdikce podle mapovací
-tabulky v `dq-pipeline`.
+The domain validators for birth number, company identifier, postal code, address registry, and industry classification are Czech examples. The structure of each check stays the same. Replace the specific rule with the equivalent for your jurisdiction, using the mapping table in `dq-pipeline`.
 
-## Zásady, na kterých to stojí
+## Principles
 
-- Žádné tvrzení o kvalitě bez dotazu a bez čísla.
-- Ke každému číslu univerzum — „5 328 chybí" nic neznamená.
-- Originální sloupec se nikdy nepřepisuje; remediace jde do `_STD` sloupců.
-- Křížová kontrola dělá z podezření důkaz.
-- Oprava dat bez opravy vstupní kontroly znamená, že se defekt vrátí.
+- No claim about quality without a query and a number.
+- Every number needs its universe. "5,328 missing" alone means nothing.
+- Never overwrite the original column. Remediation writes to `_STD` columns.
+- A cross check turns a suspicion into evidence.
+- Fixing the data without fixing the input control means the defect returns.
 
-## Licence
+## Limits
 
-MIT
+The skills contain documentation and SQL. They ship no runnable code and no tests. The skill files themselves are written in Czech.
+
+## License
+
+[MIT](LICENSE)
