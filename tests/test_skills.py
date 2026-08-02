@@ -1,3 +1,17 @@
+#
+# Project: dq-skills
+# File:    test_skills.py
+#
+# Description:
+# Checks that every skill file carries the frontmatter and the pipeline wiring Claude Code expects.
+#
+# Author:
+# Jan Alexandr Kopřiva
+# jan.alexandr.kopriva@gmail.com
+#
+# License: MIT
+#
+
 """Checks every skill file is shaped the way Claude Code expects.
 
 A skill with broken frontmatter is not loaded and not reported, so nothing
