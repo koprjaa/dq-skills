@@ -62,6 +62,11 @@ Když u nečitelného identifikátoru chybí i odvozené datum, použij jako **k
 původní uložené datum (je-li věrohodné) — maximalizuje dedup signál, aniž by se cokoli
 nevalidního dostalo na výstup.
 
+Tohle je moje rozšíření, ne postup z kurzu: 4IZ562 pouští do párování i do odvozování jen
+identifikátory, které prošly kontrolním součtem. Rozpor to není (nevalidní hodnota se ani
+tady nikam nepublikuje), ale když to obhajuješ, přiznej to jako vlastní volbu a ukaž na ní
+rozdíl v počtu sloučení — je to přesně ta varianta A z porovnání klíčů níž.
+
 ## Klastrování a survivor
 
 V rámci klastru vyber jeden přeživší záznam. Skóre kombinuje kvalitu, aktivitu a čerstvost:
@@ -77,7 +82,13 @@ df["SURV_RECORD_IND"] = (~df.duplicated("MCODE", keep="first")).astype(int)
 Váhy zdůvodni ve zprávě — jsou to obchodní rozhodnutí, ne matematika. Deterministický
 tiebreak (`PK` jako poslední kritérium) je povinný, jinak nejsou výsledky reprodukovatelné.
 
-**Nemaž duplicity.** Označ je příznakem. Smazání zahodí evidenci a znemožní audit sloučení.
+**Nemaž duplicity.** Označ je příznakem. Smazání zahodí evidenci, znemožní audit sloučení
+a při chybné deduplikaci je ztráta nevratná.
+
+Moderní MDM jde ještě dál než příznak: duplicitní záznamy zůstávají v bázi **prolinkované
+vazbou, která nese pravděpodobnost shody**, a klastr má jen určeného nejlepšího reprezentanta.
+Rozdíl je praktický — u hraničních shod si necháváš otevřená vrátka, protože vazbu s nízkou
+pravděpodobností jde později přehodnotit, kdežto sloučení se přehodnocuje mizerně.
 
 ### Skóre kvality záznamu
 
