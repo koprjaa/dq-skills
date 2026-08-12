@@ -108,9 +108,19 @@ Alertuj na **změnu**, ne na absolutní hodnotu. Úplnost 92 % může být norm�
 92 % za den je incident. Prahy: skokový pokles skóre, nová hodnota mimo číselník, nárůst
 podílu zástupných hodnot, propad match rate na registr, objem mimo očekávaný rozsah.
 
+Na „změnu" existují míry, které obhájíš líp než práh od oka: **PSI** (population stability
+index) a **Kullback-Leiblerova divergence** na posun rozdělení hodnot, **Kolmogorov-Smirnovův
+test** na shodu s referenčním obdobím. Na stabilitu v čase se hodí **Shewhartův regulační
+diagram** — střední hodnota, pásma ±1/2/3 sigma, LCL a UCL; odliší běžný šum od signálu líp
+než pevná mez.
+
+Posunu rozdělení hodnot se říká **data drift**, změně struktury **schema drift**. Z toho plyne,
+že profiling není jednorázová příprava před auditem: má běžet **při každém loadu**, ne jednou
+za projekt.
+
 Rozdíl proti data observability: monitoring měří **kvalitu obsahu** podle definovaných pravidel,
-observability sleduje **chování pipeline** (čerstvost, objem, schema drift). Potřebuješ obojí;
-schema drift totiž tiše rozbije samotná pravidla.
+observability sleduje **chování pipeline** — pět pilířů: čerstvost, rozdělení hodnot, objem,
+schéma a lineage. Potřebuješ obojí; schema drift totiž tiše rozbije samotná pravidla.
 
 Metadatový repozitář (`DQM_MDR`) drž aktuální — je to zároveň konfigurace monitoringu
 i dokumentace. Když nepokrývá celé univerzum, monitoring má slepá místa.
@@ -128,6 +138,16 @@ původního stavu:
 | lineage a provenience | odkud hodnota přišla a čím prošla — bez toho nelze dohledat příčinu |
 | správa číselníků | proces zavedení nové hodnoty, jinak vznikne stínová taxonomie |
 | pravidelný re-audit | metriky se hlásí a řeší, ne jen měří |
+
+`DQM_MDR` je minimální lokální varianta katalogu, dost na audit jednoho schématu. Cílový stav
+governance je **federovaný datový katalog** (DataHub, Atlan, Collibra), který spojuje technická,
+provozní i byznysová metadata — lineage, data contracts, business glossary — napříč zdroji.
+Nevydávej tabulku v MySQL za datový katalog; je to jeho zárodek.
+
+Prevence není jen kontrola na vstupním formuláři. Životní cyklus informace **POSMAD** (plan,
+obtain, store, share, maintain, apply, dispose) ukazuje, kde všude defekt vzniká — sdílení,
+údržba i likvidace jsou stejně platná místa jako pořízení. Projdi cyklus krok po kroku a ke
+každému se zeptej, jaká kontrola tam chybí.
 
 Chybějící kategorie v číselníku (příklad: podnikající fyzická osoba, která má současně osobní
 i firemní identifikátor) je governance problém, ne datový. Dokud nikdo nesmí číselník rozšířit,

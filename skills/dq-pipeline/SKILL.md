@@ -22,7 +22,7 @@ dq-parser → dq-standardizator → dq-adresar → dq-imputator → dq-deduplika
 | `dq-auditor` | katalog zjištění, root-cause, COPQ/ROI, prioritizace, zpráva | po validatoru |
 | `dq-parser` | atomizace složených hodnot | první krok remediace |
 | `dq-standardizator` | kanonický tvar + napojení na referenční slovníky | po parseru |
-| `dq-adresar` | napojení na adresní/geografický registr, match rate | po standardizaci |
+| `dq-adresar` | obohacování z adresního/geografického registru, match rate | po standardizaci |
 | `dq-imputator` | doplnění chybějících hodnot | po napojení na registry |
 | `dq-deduplikator` | match code, klastry, survivor, golden record, household | po imputaci |
 | `dq-strazce` | typy, FK/CHECK, DQ firewall, monitoring, governance | poslední |
@@ -34,20 +34,44 @@ neprojdou, protože je stávající data poruší.
 Kroky lze vynechat, když je doména nemá (žádné adresy → bez `dq-adresar`), ale **nikdy nepřehazuj
 pořadí**.
 
-## DQ dimenze — každé zjištění patří právě do jedné
+## Vlastnosti dat — co se měří
 
-| Dimenze | Sloupec v MDR | Otázka |
+Pozor na dvě vrstvy modelu. Kurz 4IZ562 nazývá **dimenzemi** pětici nadřazených kategorií
+(endogenní, časové, kontextuální, dimenze užití, ekonomická). To, co se měří v tabulce níže,
+jsou **vlastnosti (charakteristiky) dat** spadající pod ně. V ostatních skillech píšu
+„dimenze" jako zkratku pro tuhle šestici — pro akademické publikum to rozliš, jinak zaměníš
+nadřazenou kategorii s měřenou vlastností.
+
+| Vlastnost | Sloupec v MDR | Otázka |
 |---|---|---|
 | Úplnost | `COMPLETENESS` | Je hodnota vyplněná vůči **relevantnímu univerzu**? |
-| Syntaktická správnost | `SYN_CORR` | Odpovídá formát pravidlu (regex, délka, checksum)? |
-| Sémantická správnost | `SEM_CORR` | Dává hodnota v kontextu smysl (číselník, rozsah, realita)? |
+| Syntaktická správnost | `SYN_CORR` | Odpovídá tvar hodnoty masce (regex, délka, case, whitespace)? |
+| Sémantická správnost | `SEM_CORR` | Může hodnota existovat (číselník, rozsah, kontrolní součet, realita)? |
 | Vnitřní konzistentnost | `INT_CONS` | Sedí atributy téhož záznamu spolu? |
 | Vnější konzistentnost | `EXT_CONS` | Sedí s jiným zdrojem (FK, číselník, externí registr)? |
 | Unikátnost | `UNIQUENESS` | Kolik řádků je duplicitních / kolik entit reálně existuje? |
 
-Existuje i **strukturální** varianta („syntaktická správnost struktury"): defekt není v hodnotě,
-ale ve schématu — `char(4)` pro Y/N příznak, jednoznakový PK, chybějící FK, smíšená collation.
-Klasifikuj ji do dimenze, jejíž měření kazí, a v popisu uveď „(struktura)".
+**Jedno zjištění může zasáhnout víc vlastností najednou.** Historický název ulice je zároveň
+defekt časový, sémantický i konzistenční. Do MDR se přesto zapisuje jedna **primární**
+vlastnost — jinak nejde spočítat skóre na sloupec — a ostatní zasažené se vyjmenují v popisu
+zjištění. Je to provozní konvence kvůli měřitelnosti, ne tvrzení o modelu.
+
+Defekt schématu (`char(4)` pro Y/N příznak, jednoznakový PK, chybějící FK, smíšená collation)
+není samostatná vlastnost, ale **technická příčina nekvality**. Klasifikuj ho do vlastnosti,
+jejíž měření kazí, a v popisu uveď „(struktura)".
+
+Šestice výše pokrývá jen to, co se dá změřit dotazem nad snapshotem. Kurz zná i skupiny, které
+tahle pipeline neměří — přiznej to ve zprávě, místo aby ses tvářil, že měříš kvalitu celou:
+
+| Skupina | Příklady | Jak se měří |
+|---|---|---|
+| **časové** | aktuálnost, volatilita, včasnost | `včasnost = max(0, 1 − aktuálnost / volatilita)`, kde volatilita je průměrná doba platnosti hodnoty v realitě |
+| **spojené s užitím** | dostupnost, interoperabilita | podíl oprávněných uživatelů se skutečným přístupem; podíl atributů popsaných v datovém slovníku |
+| **ekonomické** | náklady nekvality | COPQ a ROI v `dq-auditor` |
+| **nové** | compliance, data liquidity, sustainability, data integrity | zatím spíš rámec než metrika |
+
+Časové vlastnosti jsou největší slepé místo téhle pipeline: adresa projde všemi šesti
+kontrolami a přitom může být tři roky po stěhování.
 
 ## Univerzum je povinné
 
@@ -67,12 +91,23 @@ směrem. Vždy filtruj na typ entity.
 
 Kódování: písmeno = doména, číslo = pořadí, přípona `b` = křížová kontrola k témuž jevu.
 
+Tenhle formát je provozní konvence, ne šablona z kurzu — 4IZ562 vede zjištění jako atribut
+a naměřenou úroveň vlastnosti, závažnost a dopad rozvádí slovně v manažerském shrnutí.
+Tabulka jen zaručí, že se na dopad a závažnost u žádného nálezu nezapomene.
+
+Slovník, když píšeš pro akademické nebo auditní publikum: „zjištění" = **defekt**,
+**diskrepance** nebo **anomálie**, „závažnost" = **severity**.
+
 | Stupeň | Kritérium |
 |---|---|
 | **Kritické** | porušení regulace, neidentifikovatelná osoba, přímá finanční ztráta, nefunkční klíčový proces |
 | **Vysoké** | proces funguje jen částečně, měřitelná ztráta příležitosti, bez opravy se defekt množí |
 | **Střední** | zhoršuje analytiku a údržbu, obchází se ručně |
 | **Nízké** | hygiena, kosmetika, konzistence pojmenování |
+
+Stupně odpovídají prioritám v matici užití dat (Critical / High / Medium / Low). Kritéria
+v pravém sloupci jsou moje operacionalizace — kurz pro odvození závažnosti odkazuje na
+klasifikaci incidentů v zákaznické podpoře, ne na pevný číselník.
 
 ## Křížová kontrola je nejcennější nález
 
@@ -96,6 +131,10 @@ Skilly popisují **role**, ne konkrétní tabulky. Než začneš, namapuj schém
 | **katalog** | co se prodává/nabízí, s časovou platností | produkty, služby, předměty, typy zákroků |
 | **číselník (LOV)** | interní doména povolených hodnot | typy, stavy, kategorie, příznaky |
 | **referenční registr (REF)** | externí autoritativní zdroj | registr adres, osob, klasifikace odvětví, ISO číselníky |
+
+Kurz 4IZ562 dělí data na čtyři třídy: **kmenová (master) data**, **transakční data**,
+**číselníky (LOV)** a **referenční data**. Satelity a katalog jsou moje jemnější dělení uvnitř
+prvních dvou, ne kanonické kategorie — v akademickém textu je tak i pojmenuj.
 
 Příklady v ostatních skillech pocházejí z auditu pojišťovny (`PART_PARTY`, `PARTY_ADDRESS`,
 `PARTY_CONTACT`, `PROD_CONTRACT`, `LOV_*`, `REF_*`) — ber je jako ilustraci role, ne jako
@@ -140,11 +179,35 @@ Konstrukce checksumu (váhy, modulo) se liší; **struktura kontroly zůstává*
 → křížová konzistence s odvozenými atributy. Deduplikační de-gendering příjmení je jazykově
 specifický — pro neflektivní jazyky ho vypusť.
 
+## Metodické ukotvení
+
+Pipeline je provozní destilát, ne originální metodika. Když se má obhájit před akademickým
+nebo auditním publikem, opři ji o rámce, na kterých stojí (podle kurzu 4IZ562):
+
+| Rámec | Co z něj plyne | Kde to v pipeline je |
+|---|---|---|
+| **DAMA-DMBOK** | vztah Data Quality Managementu a Data Governance | governance v `dq-strazce` |
+| **TDQM** (Wang, MIT) | dimenze jako makro-kategorie nad vlastnostmi; IP-Map pro tok dat | vlastnosti dat výše; diagram toku v `dq-auditor` |
+| **TIQM** (English) | informace jako produkt, náklady nekvality, Deming a Juran | COPQ v `dq-auditor` |
+| **Ten Steps** (McGilvray) | životní cyklus POSMAD, sběr dopadových příběhů | matice užití v `dq-auditor` |
+| **COBIT / ITAF** (ISACA) | kontrolní rámec a nezávislost auditu | struktura zprávy v `dq-auditor` |
+| **ISO 8000** | syntaxe a sémantické kódování kmenových dat | `dq-standardizator`, `dq-deduplikator` |
+| **ISO 25012** | 15 charakteristik, inherentní vs. systémově závislé | vlastnosti dat výše |
+| **modely zralosti DGOV** | pětistupňová škála Initial → Optimized | cíl `dq-strazce`, ne jednorázový audit |
+
+Kurz shrnuje disciplínu do tří pilířů („datová kvalita 1-2-3") a deset skillů se do nich mapuje:
+**audit** (`dq-profiler`, `dq-validator`, `dq-auditor`) → **zlepšení** (`dq-parser` až
+`dq-deduplikator`) → **monitoring** (`dq-strazce`).
+
 ## Tvrdá pravidla
 
+- **Kvalita je definovaná užitím, ne absolutně.** Atribut, na kterém nestojí žádný proces, nemá
+  špatnou kvalitu — má neznámou hodnotu. Než začneš měřit, zjisti, kdo data používá (matice
+  užití v `dq-auditor`); jinak vyrobíš technicky přesný a byznysově bezcenný report.
 - Nikdy nekonstatuj kvalitu bez dotazu. Nejde-li ověřit, napiš „neověřeno" a proč.
 - Žádné tiché coercion, které schová defekt (`CAST` bez kontroly, `COALESCE` na 0).
-- 100% konstanta ve sloupci = vždy finding, ne „čistá data".
+- 100% konstanta ve sloupci = vždy finding, ne „čistá data". Plošně doplněná defaultní
+  hodnota má v kurzu vlastní jméno: **fantom**.
 - Metriky stabilní při rerunu — zafixuj snapshot datum, nepoužívej `CURRENT_DATE` v metrikách.
 - Anti-join (`LEFT JOIN … WHERE … IS NULL`), ne `NOT IN` — `NOT IN` s NULL vrátí prázdno.
 - Nikdy nepřepisuj původní sloupec. Remediace jde do `*_STD` sloupců, originál zůstává jako

@@ -28,7 +28,17 @@ Přílohy (chybějící FK, návrhy nových číselníků)
 ```
 
 **Manažerské shrnutí piš jako poslední, ale čte se první.** Musí obsahovat jednu částku,
-jeden termín a jedno doporučení. Ne seznam tabulek.
+jeden termín a jedno doporučení. Ne seznam tabulek. Vejde se na **jednu A4** — píšeš pro
+představenstvo, ne pro DBA.
+
+**Závěry projednej předem** s manažery, kterých se týkají — dřív, než je uvidí představenstvo.
+Je to standard ISACA a má tři důvody: anomálie může mít legitimní byznysové vysvětlení, které
+z dat nevidíš; nikdo nemá rád překvapení na boardu; a doporučení bude implementovat ten, kdo
+je slyšel poprvé od tebe, ne z plátna.
+
+Slovník kurzu, když píšeš do školy: COPQ → **náklady z nekvality dat**, kořenová příčina →
+**prapůvodní příčina**, závažnost → **severita**, nápravná opatření → **doporučená opatření**.
+Matice užití se jmenuje stejně (nebo BUS matrix).
 
 Sekce **Omezení užití** a **Identifikovaná omezení při realizaci auditu** nejsou formalita:
 audit platí ke snapshotu, k danému rozsahu a s danými zdroji. Bez toho je zpráva nepodložená.
@@ -46,9 +56,25 @@ audit platí ke snapshotu, k danému rozsahu a s danými zdroji. Bez toho je zpr
 | 7 | Kvantifikace dopadů | COPQ přes procesy z matice užití |
 | 8 | Formulace doporučení | root-cause + prioritizovaná opatření |
 
+Osm kroků je moje zhuštění. Metodika kurzu 4IZ562 jich má **dvanáct** (plán auditu, vymezení
+universa, technický profiling, naměření vlastností, identifikace referenčních zdrojů …
+kvantifikace dopadů, formulace doporučení) — není to jiný postup, jen jemnější dělení.
+Odevzdáváš-li do kurzu, vezmi číslování a názvy kroků ze zadání, ať sedí na šablonu.
+
+Těch osm kroků je skládačka z metodik, které učí kurz 4IZ562 — když zprávu obhajuješ, jmenuj
+zdroj: **TIQM** (English) pro náklady nekvality, **Ten Steps** (McGilvray) pro matici užití
+a životní cyklus POSMAD, **TDQM** (Wang, MIT) pro IP-Map toku dat, **ISACA ITAF / COBIT**
+(standardy S7, G20) pro náležitosti a nezávislost auditorské zprávy. Bez uvedení rámce to
+čte jako ad-hoc praxe jednoho člověka, ne jako auditovatelná metodika.
+
 Krok 4 se nejčastěji vynechává — a bez něj nejde udělat krok 7. **Matice užití** mapuje každý
 klíčový atribut na procesy, které na něm stojí (marketing, compliance/AML, regulatorní
 reporting, pojistná matematika). Ta vazba je jediný most mezi „2 % chybí" a „stojí to X Kč".
+
+Ke krokům 3 a 4 patří i **subjektivní hodnocení kvality** — rozhovor nebo dotazník s uživateli
+dat a se stewardy. Naměřené číslo řekne, kolik hodnot chybí; teprve uživatel řekne, jestli je
+to defekt, nebo legitimní stav procesu. Nálezy, které v datech vidět nejsou (obcházení systému,
+stínové excely, nedůvěra v report), vylezou jen odsud.
 
 ## Katalog zjištění
 
@@ -61,6 +87,8 @@ Interpretační odstavce jsou to, co odlišuje zprávu od výpisu. Skládej je t
 „Porušení atomičnosti a nemožnost validace", „Sirotci a historický import".
 
 Ke každému velkému nálezu připoj **křížovou kontrolu** s příponou `b` (viz `dq-pipeline`).
+Křížové testování je standardní metoda; přípona `b` a rozsah tří až pěti odstavců na doménu
+jsou moje konvence, ne značení z kurzu.
 Nález `A1` (konstanta „CZE") je podezření; `A1b` (2 633 klientů s literálem „cizinec" v rodném
 čísle a u všech 100 % země „CZE") je důkaz.
 
@@ -71,7 +99,9 @@ sekce, protože se nedají opravit v jedné tabulce.
 
 ## Root-cause analýza
 
-Metoda „n-krát proč" dovedená k příčině, kterou lze **opravit procesně**, ne dotazem.
+Metoda **„n-krát proč" (5 Whys)** dovedená k příčině, kterou lze **opravit procesně**, ne
+dotazem. Když příčin může být víc naráz, roztřiď je **Ishikawovým diagramem** (rybí kost) na
+procesy, lidi a technologie — jinak skončíš u jedné a zbytek přehlédneš.
 Typický výsledek — šest kořenových příčin, na které se namapují desítky nálezů:
 
 | # | Kořenová příčina | Co z ní plyne |
@@ -84,8 +114,9 @@ Typický výsledek — šest kořenových příčin, na které se namapují des�
 | 6 | **Absence Data Governance** | není vlastnictví dat, nejsou stewardi, není datový katalog → nikdo neodpovídá za kvalitu atributu |
 
 Pravidlo: ke každé příčině uveď **evidenci z dat** (konkrétní nález s číslem) a **odkaz na
-architekturu** (který systém, který kanál, kdy vzniká). Diagram toku dat mezi kanály a
-systémy vysvětlí příčinu líp než odstavec.
+architekturu** (který systém, který kanál, kdy vzniká). Odborně: příčinu lokalizuješ přes
+**data lineage** (čím hodnota prošla) a **data provenance** (odkud přišla). Diagram toku dat
+mezi kanály a systémy vysvětlí příčinu líp než odstavec.
 
 Kaskády pojmenuj: duplicitní adresy nejsou samostatný problém, ale důsledek chybějící
 deduplikace klientů (příčina #1). Bez toho se opravuje symptom.
@@ -103,8 +134,20 @@ Postup na každý proces z matice užití:
 Typické procesy: cross-sell kampaně (ročně), up-sell (jednorázový potenciál), retence (ročně),
 pojistně-matematické výpočty a technické rezervy (jednorázová chybná alokace).
 
+Dva se přehlížejí a přitom jsou nejdražší:
+
+- **Degradace CLV** — klient rozpadlý do dvou záznamů spadne v segmentaci níž, dostane horší
+  péči a roste u něj pravděpodobnost odchodu. Ztráta není jedna kampaň, ale zbytek jeho
+  životního cyklu.
+- **Znehodnocení propensity modelů** — bez funkčního telefonu a e-mailu není follow-up
+  a response rate spadne řádově (v modelovém příkladu z 20 % na 10 %). Model je dobrý,
+  jen na něm nejde jednat.
+
 Proti tomu **náklady nápravy**: člověkodny × sazba × velikost týmu, plus licence/napojení
 na registry. ROI počítej **konzervativně** — jen z nejjistějšího proudu, ne ze součtu všech.
+Je to přísnější než školní model, který ROI počítá ze součtu všech vyčíslených ztrát. Důvod:
+číslo, které stojí na jednom dobře podloženém proudu, se u stolu s auditovaným shazuje hůř
+než součet čtyř odhadů.
 
 Reálný příklad struktury výsledku:
 
@@ -121,6 +164,13 @@ Reálný příklad struktury výsledku:
 Každý předpoklad vypiš explicitně (počet klientů, marže, konverze). Auditovaný musí být
 schopen ti čísla oponovat — o to jde. Nepodložený odhad vydávaný za výpočet je horší než
 přiznaný odhad.
+
+**Jak to prezentovat.** Tabulka čísel před představenstvem sama neprojde. Použij **waterfall
+graf**: vlevo výchozí náklady z nekvality, jednotlivé nápravné projekty jako sloupce dolů,
+vpravo cílový stav — je to reconciliace mezi „stojí nás to X" a „po nápravě Y", a vysvětlí
+za tebe, kam ty peníze zmizí. Ke tvrdým číslům připoj jeden **katastrofický příběh**
+z provozu: konkrétní historka o tom, co defekt způsobil, prodá rozpočet líp než čtvrté
+desetinné místo.
 
 ## Legislativní kontext
 
@@ -150,6 +200,14 @@ a zavést regex validaci na vstupu → funkční elektronická komunikace".
 
 Priorita se řídí kombinací: závažnost × počet zasažených × náklad opravy. Vysoká = regulace
 nebo peníze; střední = analytika a údržba; nízká = hygiena.
+
+Ten vzorec je hrubý filtr, ne verdikt. Nad ním rozhoduje **matice přínos × náklad**: nahoru
+patří **quick wins** (velký dopad, levná oprava), teprve za nimi architektonické projekty.
+A výsledek konfrontuj se subjektivním šetřením — atribut s vysokou chybovostí, který v praxi
+nikdo nepoužívá, má nízkou prioritu bez ohledu na to, co spočítal vzorec.
+
+Ke strategickým doporučením patří **přiřazení rolí** (data owner, data steward, data product
+manager) na procesy a datové produkty, ideálně RACI maticí. Doporučení bez jména je přání.
 
 **Ke každému opatření patří prevence.** Oprava dat bez opravy vstupní kontroly znamená, že se
 defekt vrátí — a to napiš explicitně: „retrospektivně prověřit 23 477 smluv **a** zavést

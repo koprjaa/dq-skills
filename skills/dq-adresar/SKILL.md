@@ -1,12 +1,16 @@
 ---
 name: dq-adresar
-description: Napojení adres na adresní registr (RÚIAN, UIR-ADR nebo jakýkoli národní address registry) — stavba match code, hierarchie indexů podle přesnosti (budova, ulice, obec), fuzzy párování bez diakritiky, měření match rate, řešení collation a rozsahových mezer registru (P.O. Box), přiřazení kódu adresního bodu a příznaku doručitelnosti. Krok remediace mezi dq-standardizator a dq-imputator. Použij vždy, když se pracuje s adresami a je potřeba je "napojit na registr", "spárovat s RÚIAN", "geokódovat", "doplnit kód adresy", "ověřit doručitelnost", "zjistit kolik adres je validních" — i když uživatel registr nepojmenuje. Keywords: RÚIAN, UIR-ADR, adresní registr, address registry, match code, adresa_kod, geokódování, párování adres, doručitelnost, match rate.
+description: Napojení adres na adresní registr (RÚIAN, UIR-ADR nebo jakýkoli národní address registry) — stavba match code, hierarchie indexů podle přesnosti (budova, ulice, obec), fuzzy párování bez diakritiky, měření match rate, řešení collation a rozsahových mezer registru (P.O. Box), přiřazení kódu adresního bodu a příznaku doručitelnosti. Krok remediace mezi dq-standardizator a dq-imputator. Použij vždy, když se pracuje s adresami a je potřeba je "napojit na registr", "spárovat s RÚIAN", "geokódovat", "doplnit kód adresy", "ověřit doručitelnost", "zjistit kolik adres je validních" — i když uživatel registr nepojmenuje. Keywords: RÚIAN, UIR-ADR, adresní registr, address registry, obohacování dat, data enrichment, match code, adresa_kod, geokódování, párování adres, doručitelnost, match rate.
 ---
 
 # Adresář — napojení na adresní registr
 
 Adresa bez kódu z registru je jen text. S kódem je to ověřená doručovací adresa, na kterou lze
 navěsit geokódování, pricing podle lokality a identifikaci domácnosti.
+
+Tenhle krok se v kurzu 4IZ562 jmenuje **obohacování dat (data enrichment)** — napojení na
+externí autoritativní zdroj a převzetí hodnoty, kterou vlastní data nenesou. Adresní registr
+je jen nejčastější případ; totéž platí pro registr firem nebo klasifikaci odvětví.
 
 Pipeline: `dq-standardizator` → **dq-adresar** → `dq-imputator` → `dq-deduplikator`.
 Předpoklad: adresa je už atomizovaná (`dq-parser`) a poštovní kód standardizovaný.

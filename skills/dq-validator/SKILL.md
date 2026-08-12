@@ -23,20 +23,29 @@ Kompletní SQL katalog: `references/checks-sql.md`.
 - **Nula je výsledek.** „0 sirotků" je pozitivní nález a patří do zprávy. Ale připoj, jestli
   je vynucená (FK existuje) nebo náhodná (FK chybí) — bez FK je to stav, ne záruka.
 - **Vzorek ke každému nálezu.** Ke každému nenulovému počtu vytáhni 10–20 konkrétních řádků.
-  Interpretaci dělá vzorek, ne agregát.
+  Interpretaci dělá vzorek, ne agregát. Je to pracovní default pro pochopení příčiny, **ne
+  statisticky reprezentativní vzorek** — když má vzorek nést závěr o celku, použij metodiku
+  vzorkování (discovery sampling podle ISACA) a napiš do zprávy jakou.
 
 ## Postup podle typu tabulky
 
 ### Provozní tabulka — všech šest dimenzí
 
 1. **Úplnost** — po sloupcích, s filtrem univerza, rozliš NULL / `''` / zástupnou hodnotu.
-2. **Syntaktická správnost** — regex, délka, checksum, whitespace, case; jen na neprázdných.
-3. **Sémantická správnost** — anti-join na číselník, rozsahy, sentinel hodnoty, hodnoty
-   sémanticky patřící jinam (IČO v poli sektoru, celá adresní hierarchie v poli obce).
+2. **Syntaktická správnost** — maska a nic víc: regex, délka, whitespace, case; jen na
+   neprázdných hodnotách.
+3. **Sémantická správnost** — anti-join na číselník, rozsahy, sentinel hodnoty, **kontrolní
+   součet (mod 11)**, hodnoty sémanticky patřící jinam (IČO v poli sektoru, celá adresní
+   hierarchie v poli obce). Checksum patří sem, ne k syntaxi: neříká, jak hodnota vypadá,
+   ale jestli může existovat.
 4. **Vnitřní konzistentnost** — odvozený vs. zdrojový atribut, vzájemně vylučující se atributy,
    párové atributy, časové rozsahy.
 5. **Vnější konzistentnost** — sirotci, napojení na registr (measure match rate).
 6. **Unikátnost** — přirozený klíč, redundance celého záznamu, sdílené hodnoty přes N entit.
+
+Pořadí je pracovní posloupnost (levné kontroly dřív než JOINy na registr), ne norma — závazné
+pořadí měření nikdo nepředepisuje. Unikátnost se standardně měří na úrovni celých záznamů přes
+porovnávací kódy; rozpad na tři řezy výše je moje rozšíření, ne definice.
 
 ### Číselník (LOV) — vlastní kvalita + jak se používá
 
@@ -109,7 +118,8 @@ klientských dat — a musí to být ve zprávě napsané, jinak se 100 % těcht
 ## Doménové validátory (příklad: ČR)
 
 Následující pravidla jsou vázaná na českou jurisdikci. **Struktura kontroly je univerzální**
-(formát → checksum → křížová konzistence s odvozenými atributy), konkrétní váhy a délky nahraď
+(formát → checksum → křížová konzistence s odvozenými atributy — první krok měří syntaktickou
+správnost, druhý sémantickou, třetí vnitřní konzistentnost), konkrétní váhy a délky nahraď
 ekvivalentem cílové země — mapovací tabulka je v `dq-pipeline`, sekce Přenositelnost.
 
 | Atribut | Pravidlo |
@@ -122,7 +132,9 @@ ekvivalentem cílové země — mapovací tabulka je v `dq-pipeline`, sekce Pře
 | **Pevná (CZ)** | 9 číslic, první číslice 2–5. Číslo s předvolbou 2xx/5xx vedené jako mobil = sémantická chyba, ne syntaktická. |
 | **Kód země** | ISO 3166-1 alpha-3, tři velká písmena. |
 
-Placeholdery, které musí spadnout do „nevalidní" ještě před regexem:
+Placeholdery se vyhodnocují ještě před regexem, ale nepočítej je jako syntaktickou chybu —
+jsou to **fantomy, tedy chybějící hodnota, a patří do úplnosti**. Kdybys je pustil do regexu,
+vykážeš jednu díru dvakrát a v nesprávné vlastnosti:
 `''`, `NA`, `N/A`, `NULL`, `.`, `-`, `cizinec`, `NEVYPLNENO`, `9999999999`, `0000000000`,
 `99999`, `00000`, číslo tvořené jednou opakovanou číslicí.
 
@@ -141,10 +153,33 @@ UPDATE DQM_MDR SET COMPLETENESS = (
 WHERE TABLE_NAME = 'PART_PARTY' AND COLUMN_NAME = 'PARTY_FNAME';
 ```
 
-Pokrytí MDR je samo o sobě metrika. Když repozitář eviduje 39 sloupců ze 4 tabulek, zatímco
-databáze má 23 tabulek, je to finding („MDR nepokrývá univerzum") a zároveň úkol — rozšířit ho.
+Kurz 4IZ562 používá pro tytéž vlastnosti pětipísmenné kódy: `CMPLT` (úplnost), `SNCOR`
+a `SMCOR` (syntaktická a sémantická správnost), `INCNS` a `EXCNS` (interní a externí
+konzistentnost), `UNQNS` (unikátnost). Když odevzdáváš do kurzu, drž se jich — a u dvojice
+`SNCOR`/`SMCOR` si ověř zadání, ty dva kódy se snadno prohodí.
 
-Ne každá dimenze dává smysl u každého sloupce. Nevyplňuj nulou, nech NULL a uveď proč.
+**Naplněnost MDR** je sama o sobě metrika. Když repozitář eviduje 39 sloupců ze 4 tabulek,
+zatímco databáze má 23 tabulek, je to finding („MDR nepokrývá univerzum") a zároveň úkol —
+rozšířit ho. Neříkej tomu *pokrytí*, ten pojem je obsazený: v kurzu znamená kontextuální
+vlastnost dat, tedy jakou část možných hodnot atribut vůbec obsahuje.
+
+Ne každá vlastnost dává smysl u každého sloupce. Nevyplňuj nulou, nech NULL a uveď proč —
+nula je naměřená hodnota „nic nevyhovuje", ne „neměřeno", a v agregaci by strhla skóre dolů.
+
+## Agregace skóre
+
+Skóre na sloupec je meziprodukt. Nad ním se agreguje ve dvou krocích:
+
+1. **Skóre atributu = minimum z jeho naměřených vlastností.** Limitující faktor: 90% úplnost
+   při 80% syntaktické správnosti dává použitelnost 80 %. Rozhoduje nejslabší vlastnost,
+   protože proces spadne na ní — průměr by ji schoval.
+2. **Skóre užití = vážený průměr těch minim** přes atributy, na kterých daný proces stojí
+   (podle matice užití v `dq-auditor`). Ne přes všechny sloupce tabulky: atribut, který
+   cross-sell nepotřebuje, jeho skóre ovlivňovat nemá.
+
+**Jedno celkové skóre za databázi nepočítej.** Váží všechno stejným metrem a schová kritický
+lokální defekt v moři čistých sloupců. Když ho management chce, dodej ho výhradně s rozpadem
+po užitích a se jménem nejhoršího atributu.
 
 ## Výstup validatoru
 

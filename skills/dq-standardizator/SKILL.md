@@ -1,6 +1,6 @@
 ---
 name: dq-standardizator
-description: Standardizace dat do kanonického tvaru a napojení na referenční slovníky — tituly, jména a příjmení proti registru, rodné číslo a IČO, PSČ, e-mail, telefon, diakritika, case, padding, zástupné hodnoty na NULL, konvence _STD sloupců a match klíčů. Druhý krok remediace, po dq-parser, před dq-imputator. Použij, když je potřeba "sjednotit zápis", "standardizovat hodnoty", "napojit na číselník", "normalizovat jména nebo tituly", "vyčistit e-maily a telefony". Keywords: standardizace, normalizace, kanonický tvar, referenční slovník, diakritika, match key, _STD sloupce, čištění hodnot.
+description: Standardizace dat do kanonického tvaru a napojení na referenční slovníky — tituly, jména a příjmení proti registru, rodné číslo a IČO, PSČ, e-mail, telefon, diakritika, case, padding, zástupné hodnoty na NULL, konvence _STD sloupců a match klíčů. Druhý krok remediace, po dq-parser, před dq-imputator. Použij, když je potřeba "sjednotit zápis", "standardizovat hodnoty", "napojit na číselník", "normalizovat jména nebo tituly", "vyčistit e-maily a telefony". Keywords: standardizace, unifikace, normalizace, kanonický tvar, referenční slovník, diakritika, match key, _STD sloupce, čištění hodnot.
 ---
 
 # Standardizátor — kanonický tvar
@@ -23,16 +23,21 @@ ALTER TABLE PART_PARTY
   ADD PARTY_TITBEF_STD  varchar(10), ADD PARTY_TITAFT_STD varchar(10);
 ```
 
-- **Dva různé výstupy z jedné hodnoty**, nepleť si je:
+- **Dva různé výstupy z jedné hodnoty**, nepleť si je. Kurz 4IZ562 pro ně má dvě různá jména
+  a je to podstatný rozdíl, ne slovíčkaření:
 
-| Výstup | K čemu | Jak vypadá |
-|---|---|---|
-| **display** (`_STD`) | zobrazení, korespondence, export | `Nováková`, `MUDr.`, `Praha 5` |
-| **match key** (`_MATCH`) | porovnávání, dedup, JOIN na registr | `NOVAKOVA`, `mudr`, `praha5` |
+| Výstup | Kurz tomu říká | K čemu | Jak vypadá |
+|---|---|---|---|
+| **display** (`_STD`) | **standardizace** | zobrazení, korespondence, reporting, export | `Nováková`, `MUDr.`, `Praha 5` |
+| **match key** (`_MATCH`) | **unifikace** | porovnávání, dedup, JOIN na registr | `NOVAKOVA`, `mudr`, `praha5` |
 
-Match key: bez diakritiky, uppercase (nebo lowercase — hlavně jednotně), bez interpunkce a
-mezer. Display si diakritiku a interpunkci **ponechává** — jinak vyrobíš korespondenci
-s „Novakova".
+Standardizace zvyšuje kvalitu hodnoty pro člověka a pro reporting. Unifikace hodnotu naopak
+**zplošťuje**, aby ji mohl porovnat algoritmus — a sama o sobě kvalitu nezvyšuje. Když v textu
+napíšeš „standardizace" tam, kde jde o klastrování duplicit, je to metodická chyba.
+
+Match key (unifikovaný tvar): bez diakritiky, uppercase (nebo lowercase — hlavně jednotně),
+bez interpunkce a mezer. Display si diakritiku a interpunkci **ponechává** — jinak vyrobíš
+korespondenci s „Novakova".
 
 - **Standardizace nesmí měnit match key**, jinak se přerovnají klastry v deduplikaci.
   Oprava diakritiky `MARTÍNKOVA` → `MARTÍNKOVÁ` mění display, match key zůstává `MARTINKOVA`.

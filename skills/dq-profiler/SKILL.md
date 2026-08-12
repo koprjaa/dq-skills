@@ -5,8 +5,9 @@ description: Technický profiling databáze — inventura tabulek, struktura a d
 
 # Profiler — technický profiling
 
-První krok. **Nehledej ještě chyby, hledej tvar dat.** Chyby najde `dq-validator` až poté, co
-víš, co v tabulkách vůbec je. Profiler končí seznamem tabulek, jejich rolí a seznamem
+První krok. **Hledej tvar dat, ne ještě čísla o chybách.** Symptomů si všímej — odlehlé
+hodnoty, anomálie, podezřelé konstanty sem patří — ale systematické měření podle pravidel
+dělá až `dq-validator`, poté co víš, co v tabulkách vůbec je. Profiler končí seznamem tabulek, jejich rolí a seznamem
 podezření, které validator ověří.
 
 Pipeline: **dq-profiler** → `dq-validator` → `dq-auditor` → remediace. Společný standard
@@ -34,7 +35,7 @@ FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() ORDER BY TABLE_RO
 
 `TABLE_ROWS` je u InnoDB odhad. Pro metriky vždy `COUNT(*)`.
 
-## Krok 2 — struktura, typy, collation
+## Krok 2 — struktura, typy, collation (konzistentnost schématu)
 
 ```sql
 SELECT TABLE_NAME, COLUMN_NAME, DATA_TYPE, COLUMN_TYPE, IS_NULLABLE, COLUMN_DEFAULT,
@@ -96,6 +97,10 @@ Jednoznakový PK (`CODE char(1)`) je křehký — při rozšíření číselník
 Pro každou provozní tabulku: `COUNT(*)`, rozpad podle typu entity, min/max u datumů a čísel,
 počet distinct u kandidátů na kategorii.
 
+U číselných sloupců nekonči u průměru — jediný extrém ho utáhne kamkoli. Kvantily, rozptyl
+a směrodatná odchylka, šikmost a špičatost řeknou o rozdělení podstatně víc; useknutý průměr
+je levná pojistka proti odlehlým hodnotám.
+
 ```sql
 SELECT PARTY_TYPE, COUNT(*) freq FROM PART_PARTY GROUP BY 1 ORDER BY freq DESC;
 SELECT MIN(CNTR_VALIDFROM), MAX(CNTR_VALIDFROM), MIN(CNTR_VALIDTO), MAX(CNTR_VALIDTO)
@@ -132,13 +137,28 @@ klientů rok narození 2010 a **všech** 31 764 antedatovaných smluv pocházelo
 naráz: prázdné `ADDR_NUM1/NUM2`, číslo domu slité do `ADDR_STREET` („Na Budíně 854"),
 konstantní `CZE` a duplicitní adresu u dvou různých klientů. Čtyři nálezy z jednoho pohledu.
 
+## Odlehlá pozorování
+
+`MIN`/`MAX` je detektor fantomů, ne analýza odlehlých hodnot. Dvě věci k tomu:
+
+- **Odlehlá hodnota nemusí být chyba.** Pojistná částka o řád vyšší než zbytek je buď překlep,
+  nebo největší klient v portfoliu. Rozhoduje doménový úsudek, ne kvantil — a než ji označíš
+  za defekt, zeptej se někoho, kdo tomu procesu rozumí.
+- **Na rozhodnutí „šum, nebo signál" existuje aparát.** Pravidlo 4 sigma a box-plot na rychlý
+  screening, Grubbsův nebo Dixonův test na jednu podezřelou hodnotu, Chauvenetovo a Peircovo
+  kritérium, u vícerozměrných dat hustotní metody (LOF, LOCI, INFLO). Metodu určuje rozdělení
+  dat, ne zvyk — u nenormálního rozdělení sigma pravidlo lže.
+
+Do zprávy patří, kterou metodou jsi odlehlé hodnoty určil a kolik jich bylo. Ne jen výsledný
+počet „chyb".
+
 ## Katalog vzorců defektů
 
 Tohle hledej v distribucích a vzorcích. Každý řádek je hypotéza pro `dq-validator`.
 
 | Vzorec | Jak vypadá | Kořenová příčina | Ověření |
 |---|---|---|---|
-| **Plošná konstanta** | jedna hodnota u 100 % řádků | sloupec plněn defaultem, ne ze vstupu | křížová kontrola s atributem, který konstantě odporuje |
+| **Plošná konstanta** (kurz: *fantom*) | jedna hodnota u 100 % řádků | sloupec plněn defaultem, ne ze vstupu | křížová kontrola s atributem, který konstantě odporuje |
 | **Zástupná hodnota místo NULL** | `NA`, `NEVYPLNENO`, `cizinec`, `9999999999`, `.` | vstupní pole je NOT NULL, operátor musí něco napsat | frekvenční distribuce, TOP hodnoty |
 | **Sentinel datum** | `2999-12-31`, `2999-01-01`, `1900-01-01`, `3000-01-01` | systém neumí NULL / „nekonečná platnost" | `MAX()`/`MIN()` na datumech |
 | **Padding na fixní délku** | `'PhDr      '`, délka přesně `n` | import do `char(n)` bez trimu | délková distribuce |
@@ -155,6 +175,9 @@ Tohle hledej v distribucích a vzorcích. Každý řádek je hypotéza pro `dq-v
 | **Duplicitní kód pro tutéž hodnotu** | `Dipl.tech.` pod CODE 19 i 20 | ruční správa číselníku | `GROUP BY TRIM(VALUE) HAVING COUNT(*)>1` |
 | **Mrtvá položka číselníku** | kód existuje, 0 použití | zrušený produkt / rezerva / překlep | LEFT JOIN z číselníku na provoz |
 | **Torzo referenční tabulky** | 1 000 řádků tam, kde má být registr | vadný import nebo omezený vzorek od dodavatele | pokrytí = kolik provozních hodnot je v REF |
+
+Zástupné a sentinelové hodnoty plošně doplněné systémem zastřešuje kurz 4IZ562 jedním
+pojmem: **fantom**.
 
 ## Výstup profileru
 
@@ -173,3 +196,15 @@ Název (co zkratka znamená) · O tabulce · Role v datovém modelu · Návaznos
 
 Sekci „Role v datovém modelu" nevynechávej — bez ní se v dalších krocích nepozná, které
 číselníky a registry jsou pro tabulku měřítkem.
+
+Tyhle dokumenty jsou **pracovní podklad, ne dodávka**. Dodávkou je jedna ucelená zpráva
+auditora (`dq-auditor`) podle standardů ISACA; per-table dokumenty se do ní agregují a
+v úplnosti patří do příloh.
+
+## Nástroje
+
+SQL a systémový katalog stačí na všechno výše. Když je po ruce Python, `ydata-profiling`
+vyrobí základní profil tabulky jedním příkazem (distribuce, chybějící hodnoty, korelace) —
+ber ho jako první nástřel, ne jako výstup; interpretaci a volbu univerza za tebe neudělá.
+Pojmenované nástroje oboru: Ataccama DQ Analyzer, DataCleaner, OpenRefine, z open source pro
+průběžnou validaci v pipeline Great Expectations, Soda Core, Deequ nebo dbt testy.
