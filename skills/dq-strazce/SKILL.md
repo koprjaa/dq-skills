@@ -1,6 +1,6 @@
 ---
 name: dq-strazce
-description: Prevence vzniku chyb a monitoring kvality dat — cizí klíče a CHECK constrainty, opravy datových typů, DQ firewall na vstupu, kontinuální měření metrik s alertingem, metadatový repozitář, data governance (vlastnictví dat, stewardi, datový katalog). Poslední krok DQ pipeline, po dq-deduplikator. Použij, když se má "zabránit opakování chyb", "zavést kontroly na vstupu", "nastavit monitoring kvality dat", "přidat FK a constrainty", "data governance". Keywords: prevence, DQ firewall, constraint, foreign key, monitoring, alerting, data governance, data steward, datový katalog, observability.
+description: Prevence vzniku chyb a monitoring kvality dat — cizí klíče a CHECK constrainty, opravy datových typů, DQ firewall na vstupu, kontinuální měření metrik s alertingem, metadatový repozitář, data governance (vlastnictví dat, stewardi, datový katalog). Poslední krok DQ pipeline, po dq-deduplikator. Použij, když se má "zabránit opakování chyb", "zavést kontroly na vstupu", "nastavit monitoring kvality dat", "přidat FK a constrainty", "data governance". Keywords: prevence, DQ firewall, constraint, foreign key, monitoring, alerting, data governance, data steward, datový katalog, observability, datový kontrakt, data contract, SLA, SLI, model zralosti.
 ---
 
 # Strážce — prevence a monitoring
@@ -22,6 +22,16 @@ a root-cause z `dq-auditor`.
 
 Nasazuj odspodu. Constraint bez opravených dat neprojde — proto je tenhle krok **až po
 remediaci**, ne před ní.
+
+Dvě věci, které se u vrstev obrany snadno přeženou:
+
+- **Kontrola kvalitu nevytváří, jen ji měří.** Firewall i observabilita jsou reaktivní: řeknou,
+  že je problém. Když se z nich stane hlavní nástroj, jen elegantněji dokumentuješ rozbitý
+  proces. Kvalitu vyrobí až oprava procesu v místě vzniku a lidi, kteří ho dělají.
+- **Kontroly stojí peníze.** Vývoj a provoz firewallu, služeb a monitoringu jsou náklady na
+  prevenci a hodnocení; proti nim stojí náklady z nekvality. Cíl není stoprocentní kvalita za
+  cenu paralyzovaného byznysu, ale **optimum, kde je součet obou nejnižší**. Ke každé navržené
+  kontrole řekni, co stojí a co ušetří.
 
 ## 1. Datové typy
 
@@ -125,6 +135,27 @@ schéma a lineage. Potřebuješ obojí; schema drift totiž tiše rozbije samotn
 Metadatový repozitář (`DQM_MDR`) drž aktuální — je to zároveň konfigurace monitoringu
 i dokumentace. Když nepokrývá celé univerzum, monitoring má slepá místa.
 
+## Datové kontrakty
+
+Monitoring i observabilita zjistí schema drift **až v produkci**. Proaktivní protějšek je
+**datový kontrakt**: dohoda mezi producentem datového produktu a jeho konzumentem o tom, co je
+zaručeno.
+
+| Část kontraktu | Obsah |
+|---|---|
+| schéma | sloupce, typy, povinnost, povolené hodnoty |
+| sémantika | co atribut znamená a co do něj nepatří |
+| **SLA** | slíbená úroveň: čerstvost, dostupnost, frekvence dodání |
+| **SLI** | konkrétní měřené číslo, kterým se plnění SLA prokazuje |
+| verze a změnová politika | co je breaking change a jaká je lhůta na migraci |
+
+Kontrakt žije v katalogu a **vynucuje se v CI**: změna schématu, která ho poruší, spadne při
+buildu, ne v noční dávce. Rozdíl proti monitoringu je v okamžiku — kontrakt problém odmítne
+před nasazením, monitoring ho popíše po něm. Chceš obojí.
+
+SLA formuluj měřitelně. Ne „data budou aktuální", ale „snapshot do 06:00, úplnost povinných
+atributů ≥ 99 %, měřeno denně". Monitoring pak nehlídá metriky obecně, ale **plnění kontraktu**.
+
 ## 5. Data governance
 
 Technická opatření vydrží, dokud za ně někdo odpovídá. Bez toho se to po roce vrátí do
@@ -143,6 +174,28 @@ původního stavu:
 governance je **federovaný datový katalog** (DataHub, Atlan, Collibra), který spojuje technická,
 provozní i byznysová metadata — lineage, data contracts, business glossary — napříč zdroji.
 Nevydávej tabulku v MySQL za datový katalog; je to jeho zárodek.
+
+Role samotné nestačí, musí mít strukturu a mandát:
+
+| Orgán | Kdo a co |
+|---|---|
+| **Executive sponsor** | senior manažer, který dá vizi a rozpočet |
+| **CDO** | byznysová protiváha CIO, odpovídá za data jako aktivum |
+| **Steering committee** | dohled a eskalační instance |
+| **Data governance council** | vlastníci domén; schvalují standardy, politiky a cílové úrovně |
+| **Data governance office** | výkonný tým: stewardi, kustodi, analytici |
+
+**Steward není jedna role.** *Business steward* (SME) určuje význam atributu, číselníky
+a priority pravidel; *technical steward* odpovídá za typy, indexy, ETL a úložiště. Když je to
+jeden člověk, jedna z těch dvou rolí se fakticky nedělá.
+
+**Governance nemusí být všude stejně přísná.** Na klíčové datové elementy pod regulací
+(Solvency II, GDPR, AML) patří tvrdý režim se schvalováním; na ad-hoc analýzy a data science
+volnější, jinak jen zpomalíš lidi, kteří nic neriskují. Dvourychlostní režim je záměr, ne
+nedůslednost — ale musí být napsané, co do kterého patří.
+
+Kam to má dojít, měř **modelem zralosti** (Initial → Optimized) po dimenzích lidi, procesy,
+standardy, technologie. Bez toho je governance nekonečný projekt bez definice hotova.
 
 Prevence není jen kontrola na vstupním formuláři. Životní cyklus informace **POSMAD** (plan,
 obtain, store, share, maintain, apply, dispose) ukazuje, kde všude defekt vzniká — sdílení,

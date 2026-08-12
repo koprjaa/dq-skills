@@ -116,7 +116,9 @@ Typický výsledek — šest kořenových příčin, na které se namapují des�
 Pravidlo: ke každé příčině uveď **evidenci z dat** (konkrétní nález s číslem) a **odkaz na
 architekturu** (který systém, který kanál, kdy vzniká). Odborně: příčinu lokalizuješ přes
 **data lineage** (čím hodnota prošla) a **data provenance** (odkud přišla). Diagram toku dat
-mezi kanály a systémy vysvětlí příčinu líp než odstavec.
+mezi kanály a systémy vysvětlí příčinu líp než odstavec. Formální notace na to je **IP-Map**
+(TDQM, MIT): zdroje dat, transformace, role uživatelů a zvlášť vyznačené DQ aktivity — z obrázku
+je pak vidět, ve kterém úseku toku kontrola úplně chybí.
 
 Kaskády pojmenuj: duplicitní adresy nejsou samostatný problém, ale důsledek chybějící
 deduplikace klientů (příčina #1). Bez toho se opravuje symptom.
