@@ -19,7 +19,7 @@ Manažerské shrnutí
   Byznys dopad (po rizicích, ne po tabulkách)
   Vyčíslení dopadů a doporučení (COPQ, náklady nápravy, ROI)
 Terminologie
-Metodika auditu (8 kroků + použité nástroje a přístup)
+Metodika auditu (12 kroků + použité nástroje a přístup)
 Rozsah auditu (univerzum, kritéria hodnocení, standardy)
 Výsledky auditu (A/B/C/D/E po doménách + kvantifikace COPQ)
 Závěry (vyjádření ke zjištěním, root-cause, doporučení, prioritizovaná opatření)
@@ -43,35 +43,42 @@ Matice užití se jmenuje stejně (nebo BUS matrix).
 Sekce **Omezení užití** a **Identifikovaná omezení při realizaci auditu** nejsou formalita:
 audit platí ke snapshotu, k danému rozsahu a s danými zdroji. Bez toho je zpráva nepodložená.
 
-## Metodika — 8 kroků
+## Metodika — 12 kroků
 
-| # | Krok | Obsah |
+| # | Krok | Čím se dělá |
 |---|---|---|
-| 1 | Plánování a rozsah | vymezení univerza: provozní tabulky + podpůrné číselníky a registry |
-| 2 | Kontrolní rámec | referenční standardy: právní normy, státní registry, interní číselníky |
-| 3 | Měřené charakteristiky | šest dimenzí (viz `dq-pipeline`) |
-| 4 | Identifikace užití dat | matice užití: atribut → byznys proces |
-| 5 | Metadatový repozitář | `information_schema` + sloupce pro naměřené dimenze |
-| 6 | Profiling a validace | `dq-profiler` + `dq-validator` |
-| 7 | Kvantifikace dopadů | COPQ přes procesy z matice užití |
-| 8 | Formulace doporučení | root-cause + prioritizovaná opatření |
+| 1 | Plán auditu | rozsah, harmonogram, zdroje, výstupy |
+| 2 | Vymezení univerza auditu | inventura a role tabulek (`dq-profiler`) |
+| 3 | Definice rámce auditu | standardy, nejlepší praktiky, referenční zdroje, právní normy, validační pravidla |
+| 4 | Definice měřených charakteristik | vlastnosti dat (`dq-pipeline`) |
+| 5 | Identifikace užití dat a prioritizace | matice užití: atribut → byznys proces |
+| 6 | Definice dopadů nekvalitních dat | model dopadu na proces, ještě před měřením |
+| 7 | Základní technický profiling | `dq-profiler` |
+| 8 | Naměření vlastností validačními pravidly | `dq-validator` + zápis do MDR |
+| 9 | Identifikace doporučených externích referenčních zdrojů | registry a číselníky, které v auditu chyběly (`dq-adresar`) |
+| 10 | Kvantifikace dopadů | COPQ přes procesy z matice užití |
+| 11 | Sumarizace závěrů auditu | katalog zjištění, root-cause, průřezové defekty |
+| 12 | Formulace doporučení | strategická vrstva + prioritizovaná opatření |
 
-Osm kroků je moje zhuštění. Metodika kurzu 4IZ562 jich má **dvanáct** (plán auditu, vymezení
-universa, technický profiling, naměření vlastností, identifikace referenčních zdrojů …
-kvantifikace dopadů, formulace doporučení) — není to jiný postup, jen jemnější dělení.
-Odevzdáváš-li do kurzu, vezmi číslování a názvy kroků ze zadání, ať sedí na šablonu.
+V tom pořadí je jedna nenápadná, ale podstatná věc: **kroky 5 a 6 stojí před profilingem**.
+Model dopadu se definuje dřív, než padne první číslo — jinak si dopad podvědomě přizpůsobíš
+tomu, co ti z dat vyšlo, a zpráva se stane obhajobou nálezů místo měřením rizika.
 
-Těch osm kroků je skládačka z metodik, které učí kurz 4IZ562 — když zprávu obhajuješ, jmenuj
+Krok 9 je taky výstup, ne příprava: seznam registrů, na které se nemá kdo napojit, patří do
+doporučení. Chybějící referenční zdroj je nález.
+
+Těch dvanáct kroků skládá dohromady metodiky, které učí kurz 4IZ562 — když zprávu obhajuješ,
+jmenuj
 zdroj: **TIQM** (English) pro náklady nekvality, **Ten Steps** (McGilvray) pro matici užití
 a životní cyklus POSMAD, **TDQM** (Wang, MIT) pro IP-Map toku dat, **ISACA ITAF / COBIT**
 (standardy S7, G20) pro náležitosti a nezávislost auditorské zprávy. Bez uvedení rámce to
 čte jako ad-hoc praxe jednoho člověka, ne jako auditovatelná metodika.
 
-Krok 4 se nejčastěji vynechává — a bez něj nejde udělat krok 7. **Matice užití** mapuje každý
+Krok 5 se nejčastěji vynechává — a bez něj nejde udělat krok 10. **Matice užití** mapuje každý
 klíčový atribut na procesy, které na něm stojí (marketing, compliance/AML, regulatorní
 reporting, pojistná matematika). Ta vazba je jediný most mezi „2 % chybí" a „stojí to X Kč".
 
-Ke krokům 3 a 4 patří i **subjektivní hodnocení kvality** — rozhovor nebo dotazník s uživateli
+Ke krokům 4 a 5 patří i **subjektivní hodnocení kvality** — rozhovor nebo dotazník s uživateli
 dat a se stewardy. Naměřené číslo řekne, kolik hodnot chybí; teprve uživatel řekne, jestli je
 to defekt, nebo legitimní stav procesu. Nálezy, které v datech vidět nejsou (obcházení systému,
 stínové excely, nedůvěra v report), vylezou jen odsud.
