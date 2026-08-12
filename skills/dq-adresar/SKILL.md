@@ -6,7 +6,9 @@ description: Napojení adres na adresní registr (RÚIAN, UIR-ADR nebo jakýkoli
 # Adresář — napojení na adresní registr
 
 Adresa bez kódu z registru je jen text. S kódem je to ověřená doručovací adresa, na kterou lze
-navěsit geokódování, pricing podle lokality a identifikaci domácnosti.
+navěsit geokódování, pricing podle lokality a identifikaci domácnosti. V pojišťovnictví je
+geokódování přímo vstupem do sazby — povodňová zóna, riziko krádeže, vzdálenost od hasičů —
+takže nenapojená adresa není jen nedoručitelná, ale i špatně naceněná.
 
 Tenhle krok se v kurzu 4IZ562 jmenuje **obohacování dat (data enrichment)** — napojení na
 externí autoritativní zdroj a převzetí hodnoty, kterou vlastní data nenesou. Adresní registr
