@@ -1,6 +1,6 @@
 ---
 name: dq-deduplikator
-description: Deduplikace a Master Data Management — stavba match code (MCODE) s hierarchií klíčů, klastrování duplicitních záznamů, výběr přeživšího záznamu (survivor), konsolidace golden recordu napříč klastrem, identifikace domácnosti (household), skóre kvality záznamu a porovnání variant klíče. Poslední krok remediace před dq-strazce. Použij, když se má "deduplikovat klienty", "najít duplicity", "golden record", "single version of truth", "sloučit záznamy", "identifikovat domácnost", "MDM". Keywords: deduplikace, MCODE, match code, golden record, survivor, household, MDM, klastr, single customer view.
+description: Deduplikace a Master Data Management — stavba match code (MCODE) s hierarchií klíčů, klastrování duplicitních záznamů, výběr přeživšího záznamu (survivor), konsolidace golden recordu napříč klastrem, identifikace domácnosti (household), skóre kvality záznamu a porovnání variant klíče. Poslední krok remediace před dq-strazce. Použij, když se má "deduplikovat klienty", "najít duplicity", "golden record", "single version of truth", "sloučit záznamy", "identifikovat domácnost", "MDM". Keywords: deduplikace, MCODE, match code, golden record, survivor, household, MDM, klastr, single customer view, record linkage, Fellegi-Sunter, splink, blocking key, práh podobnosti.
 ---
 
 # Deduplikátor — golden record
@@ -9,6 +9,9 @@ Poslední krok remediace. Cíl: **jedna entita = jeden záznam**, plus průkazn�
 kterého se dá klastr kdykoli zrekonstruovat.
 
 Pipeline: `dq-imputator` → **dq-deduplikator** → `dq-strazce`.
+
+Slovník, když píšeš do školy: klastr = **shluk / match group**, MCODE = **porovnávací kód**,
+golden record = **konsolidovaný klient** (Single Customer View, unifikovaná báze UCD).
 
 **Bez předchozích kroků to nedělej.** Dedup nad nestandardizovanými daty najde zlomek duplicit
 a naměřené číslo bude falešně nízké. `Nováková` a `NOVAKOVA` jsou pro exact match dvě osoby.
@@ -66,6 +69,59 @@ Tohle je moje rozšíření, ne postup z kurzu: 4IZ562 pouští do párování i
 identifikátory, které prošly kontrolním součtem. Rozpor to není (nevalidní hodnota se ani
 tady nikam nepublikuje), ale když to obhajuješ, přiznej to jako vlastní volbu a ukaž na ní
 rozdíl v počtu sloučení — je to přesně ta varianta A z porovnání klíčů níž.
+
+## Kde deterministický klíč nestačí
+
+MCODE výše je exact match nad unifikovanými hodnotami. Chytí duplicity, které se po
+standardizaci trefí na znak přesně — a mine všechno ostatní: překlep v příjmení, přehozené
+datum, chybějící složku kompozitu. V reálných datech je toho většina, takže **deterministický
+klíč sám o sobě dedup nedodělá**.
+
+Druhá vrstva je **pravděpodobnostní párování záznamů** (probabilistic record linkage,
+Fellegi–Sunter). Místo „klíč se rovná / nerovná" počítá pro každou dvojici věrohodnostní poměr
+ze dvou pravděpodobností na každý porovnávaný atribut:
+
+| Pravděpodobnost | Otázka |
+|---|---|
+| **m** | jak často se atribut shoduje, když jde o **tutéž** entitu (překlepy ji snižují) |
+| **u** | jak často se shoduje **náhodou** u dvou různých entit (u příjmení „Novák" vysoká, u data narození nízká) |
+
+Vážený součet přes atributy dá skóre shody. Atributy se neporovnávají na rovnost, ale mírou
+podobnosti — Jaro-Winkler nebo n-gramy na jména, vzdálenost na datumy. V Pythonu na to je
+`splink`, který m a u odhadne z dat, místo abys je střílel od boku.
+
+Deterministický klíč tím nezahazuješ: nech si ho na čisté identifikátory (IČO, rodné číslo po
+checksumu), kde je rychlý a jistý, a pravděpodobnostní vrstvu pusť na zbytek.
+
+### Blocking
+
+Porovnat každý s každým je O(n²) — u 400 tisíc klientů 80 miliard dvojic. Porovnává se proto
+jen uvnitř bloků a role atributu určuje, k čemu slouží:
+
+| Role atributu | Příklad | K čemu |
+|---|---|---|
+| **identity** | rodné číslo, IČO, jméno, příjmení | vlastní porovnání |
+| **diskriminační** | datum narození, pohlaví | odliší otce a syna na téže adrese |
+| **kvalifikační** | země, typ entity, PSČ | **blocking key**, dělí data na bloky |
+
+Blocking key musí být atribut, který mají duplicity skoro vždy shodný. Když ho zvolíš špatně,
+dvojník spadne do jiného bloku a nikdy se neporovná — a ty to na výsledku nepoznáš.
+
+### Práh a šedá zóna
+
+Skóre není verdikt. Nastav dva prahy:
+
+- **nad horním** — slučuj automaticky,
+- **pod dolním** — neslučuj,
+- **mezi nimi** — *nejistá shoda*: eskaluj na **data stewarda**, nerozhoduj algoritmem.
+
+Šedou zónu nezmenšuj tím, že prahy přitáhneš k sobě. Její velikost je informace o datech
+a fronta na ruční posouzení je legitimní výstup deduplikace, ne selhání.
+
+**Falešné sloučení je horší než nesloučená duplicita.** Nesloučená duplicita stojí peníze —
+dvě kampaně, roztříštěná historie, špatné CLV. Falešně sloučený klient uvidí v portálu smlouvy
+a osobní údaje cizí osoby; to je incident porušení důvěrnosti a GDPR, ne nepřesnost v reportu.
+Prahy nastavuj tímhle směrem, ne podle toho, kolik sloučení to vyrobí.
 
 ## Klastrování a survivor
 
@@ -184,6 +240,30 @@ print(f"varianta A: {va} entit | varianta B (použito): {df['MCODE'].nunique()} 
 
 Rozdíl mezi nimi je odhad nejistoty deduplikace. Napiš ho do zprávy i s tím, kterou variantu
 jsi zvolil a proč.
+
+## MDM je proces, ne skript
+
+Deduplikační běh vyrobí čistý stav k jednomu dni. Aby vydržel, musí kolem něj stát architektura:
+
+| Architektura | Co dělá | Zpětný tok do zdrojů |
+|---|---|---|
+| **Autonomy** | MDM uvnitř jedné aplikace | ne |
+| **Consolidation** | konsolidace v datovém skladu (analytické MDM) | ne |
+| **Back propagation** | konsolidace + propsání golden recordu zpět do zdrojů | ano, dávkově |
+| **MDM Hub** | centrální služba poskytující unifikovaný záznam v reálném čase | ano, průběžně |
+
+Hub drží data jedním ze tří způsobů: **registr** (jen index a odkazy do zdrojových systémů),
+**repozitář** (všechny atributy fyzicky centrálně), **hybrid** (centrálně nejpoužívanější
+atributy, zbytek zůstává ve zdrojích). Alternativou k relačnímu hubu je grafová databáze nad
+modelem **POLE** (persons, objects, locations, events) — duplicity se nemažou, jen propojí
+hranou, a průchod vazbami je řádově rychlejší než opakovaný JOIN.
+
+Dva pojmy, které se pletou: **system of record** je systém, kde kmenová data vznikají a udržují
+se; **system of reference** je systém, ze kterého se čtou správná a aktuální data pro reporting.
+U hubu obojí splývá.
+
+Bez vlastníků dat, stewardů a kontroly na vstupu (`dq-strazce`) se duplicity vrátí. Deduplikace
+v datovém skladu je úklid, ne prevence.
 
 ## Výstup deduplikátoru
 
