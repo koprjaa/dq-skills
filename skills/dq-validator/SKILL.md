@@ -105,6 +105,11 @@ SELECT COUNT(*) provoz_total,
 FROM <provoz> p LEFT JOIN <ref> r ON <join podmínka>;
 ```
 
+Registr má i **časovou platnost**. U registru osob a firem neověřuj jen to, že identifikátor
+dnes existuje, ale že subjekt byl aktivní **k datu transakce** — datum vzniku a zániku jsou
+v registru právě proto. Smlouva uzavřená se subjektem, který zanikl o dva roky dřív, je nález,
+ne překlep.
+
 Reálné nálezy: registr IČO měl 1 000 řádků pro 119 348 firemních klientů (pokrytí < 1 %,
 98,31 % klientů mimo registr) — nepoužitelné torzo, validace neproveditelná. Adresní registr
 měl 2,6 M řádků, ale 88,7 % bez souřadnic a 292 878 s invertovaným znaménkem; sesterská

@@ -117,6 +117,11 @@ SET a.PARTY_NACE_STD = r.NACE, a.PARTY_FORM_STD = r.ROSFORMA
 WHERE a.PARTY_TYPE='C' AND a.PARTY_NACE_STD IS NULL;
 ```
 
+Dvě věci k registrům přístupným přes API: mají **kvóty** (řádově tisíce dotazů denně, ve
+špičce méně), takže dávkuj a cachuj, ať nedoběhneš do limitu uprostřed běhu. A ber hodnotu
+**k datu, ke kterému ji potřebuješ** — sektor nebo právní forma z dneška nemusí platit pro
+smlouvu z roku 2012.
+
 Před napojením ověř **pokrytí registru** (viz `dq-validator`). Registr s 1 000 řádky pro
 119 348 subjektů nedoplní nic užitečného a je to sám o sobě finding — správné doporučení
 není „imputovat", ale „napojit se na skutečný registr".

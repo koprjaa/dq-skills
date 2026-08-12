@@ -84,7 +84,9 @@ ALTER TABLE REF_UIRADR_MERGED MODIFY MCODE_FUZZY char(32)
 
 ## Hierarchie indexů — a proč se nesmí fallbackovat
 
-Postav víc indexů podle přesnosti, ale **napojuj jen na úroveň budovy**:
+Adresní registr není plochý seznam adres, ale hierarchie územních prvků — adresní místo,
+ulice, stavební objekt, katastrální území, obec, okres, kraj. Do jaké úrovně se trefíš, to
+pak můžeš agregovat. Postav proto víc indexů podle přesnosti:
 
 | Index | Klíč | Přesnost |
 |---|---|---|
@@ -101,12 +103,25 @@ def match_code(zip5, city_n, street_n, num):
     return idx_bldv.get((zip5, city_n, num))                # vesnice bez ulice
 ```
 
-**Žádný fallback na `idx_str` ani `idx_zc`.** Kód ulice nebo obce vypadá jako úspěšné napojení,
-ale ukazuje na *jinou budovu*. Tiše špatný kód je horší než chybějící: propíše se do
-doručování i do identifikace domácnosti. Raději NULL a nižší match rate.
+**Žádný fallback uvnitř jednoho sloupce.** Kód ulice nebo obce zapsaný do pole pro budovu
+vypadá jako úspěšné napojení, ale ukazuje na *jinou budovu*. Tiše špatný kód je horší než
+chybějící — propíše se do doručování, geokódování i do identifikace domácnosti.
 
-Poslední dva indexy si nech jen na diagnostiku — „na úroveň budovy 63 %, na úroveň ulice by to
-bylo 89 %" je užitečná informace do zprávy, ne důvod ten kód uložit.
+To ale neznamená hrubší shodu zahodit. Znamená to nevydávat ji za přesnou: ulož každou úroveň
+do vlastního sloupce a přidej příznak dosažené přesnosti.
+
+| Sloupec | Obsah |
+|---|---|
+| `ADDR_CODE` | kód adresního místa (budova), jinak NULL |
+| `ADDR_CODE_STR` / `ADDR_CODE_MUN` | kód ulice / obce, když budova nevyšla |
+| `ADDR_MATCH_LEVEL` | `BLD` / `STR` / `MUN` / `NONE` |
+
+Potřebnou přesnost si pak vybere konzument. Geokódování, pricing podle rizikové zóny,
+doručování a household potřebují **budovu**. Agregovaný reporting (regulátorovi po PSČ nebo
+okresech), regionální kampaň nebo plošný mailing si vystačí s ulicí či obcí — vynutit tam NULL
+by report znehodnotilo.
+
+Do zprávy patří obojí: „na úroveň budovy 63 %, na úroveň ulice 89 %."
 
 ## Fuzzy párování — co pomáhá a co ne
 
