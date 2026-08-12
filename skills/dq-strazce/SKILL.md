@@ -135,7 +135,7 @@ původního stavu:
 | vlastnictví dat | za každou doménu odpovídá konkrétní útvar, ne „IT" |
 | data steward | jmenovitá role za kvalitu konkrétních atributů, s pravomocí měnit pravidla |
 | datový katalog | co atribut znamená, odkud přichází, kdo ho mění, jaká pravidla platí |
-| lineage a provenience | odkud hodnota přišla a čím prošla — bez toho nelze dohledat příčinu |
+| lineage a provenience | odkud hodnota přišla a čím prošla — bez toho nelze dohledat příčinu; na úroveň sloupců se lineage získává parsováním samotného SQL (SQLGlot), u nestandardních dialektů s doladěním gramatiky |
 | správa číselníků | proces zavedení nové hodnoty, jinak vznikne stínová taxonomie |
 | pravidelný re-audit | metriky se hlásí a řeší, ne jen měří |
 

@@ -5,8 +5,12 @@ description: Parsing a atomizace dat — rozbití složených hodnot do dedikova
 
 # Parser — atomizace
 
-První krok remediace. **Nic nestandardizuj, dokud to není atomické.** Standardizace pole
-`ADDR_STREET` obsahujícího „Na Budíně 854" nedá nic — registr adres zná ulici a číslo zvlášť.
+První krok remediace. **Nic nestandardizuj ani neunifikuj, dokud to není atomické.** Pole
+`ADDR_STREET` s hodnotou „Na Budíně 854" nenapojíš na registr, který zná ulici a číslo zvlášť.
+
+Porušená atomicita není kosmetika, je to **porušení první normální formy**: bez atomických
+hodnot nemá model spolehlivý identifikátor záznamu a jakékoli přibližné porovnávání
+a slučování s dalším zdrojem je nespolehlivé.
 
 Pipeline: audit → **dq-parser** → `dq-standardizator` → `dq-adresar` → `dq-imputator` → `dq-deduplikator`.
 
@@ -20,8 +24,17 @@ Pipeline: audit → **dq-parser** → `dq-standardizator` → `dq-adresar` → `
   kde vzor neexistuje, je statistické rozpoznávání entit (NER, spaCy) legitimní nástroj,
   ale jeho výstup je odhad: patří k němu skóre jistoty a příznak, a do produkčního sloupce
   nejde bez revize.
-- **Změř míru rozparsování** — kolik řádků se povedlo rozložit. To je metrika do zprávy.
+- **Osekej nepřípustné znaky dřív, než začneš dělit.** Pro každý sémantický typ si drž tabulku
+  přípustných znaků (*chop table*) — u poštovního kódu číslice, u IBANu alfanumerika — a zbytek
+  odstraň. Úspěšnost rozkladu to zvedne víc než složitější regex.
+- **Změř míru rozparsování** — kolik řádků se povedlo rozložit. To je metrika do zprávy
+  a nezaměňuj ji s *match rate*: ten se měří až při napojení na registr (`dq-adresar`).
 - Parsuj **před** čímkoli dalším: standardizace, imputace i deduplikace stojí na atomických polích.
+
+Regex řeší jeden vzor. Průmyslové parsery jdou na to přes **gramatiku** sémantického typu
+uloženou ve znalostní bázi (QKB): popíše očekávanou stavbu adresy nebo jména a jednotlivým
+kombinacím tokenů přiřadí pravděpodobnost výskytu. Když píšeš pátý regex na tutéž entitu,
+chybí ti gramatika, ne další regex.
 
 ## Adresa
 
@@ -125,16 +138,18 @@ Dvě různé věci, dvě různá řešení:
 
 | Chyba | Příklad | Řešení |
 |---|---|---|
-| systematická záměna znaku | `ĄUDOVÍT` (má být `ĽUDOVÍT`) | deterministický replace, pokud je vzor jednoznačný — např. `Ą` na začátku slova je vždy chybný přepis, protože v polštině tam nikdy nestojí |
+| systematická záměna znaku | `ĄUDOVÍT` (má být `ĽUDOVÍT`) | vzor je jednoznačný (`Ą` na začátku slova je vždy chybný přepis), ale oprava patří do `dq-standardizator` jako registrované pravidlo. V parseru jen tehdy, když ten znak brání samotnému rozkladu |
 | ztracené písmeno | `BE0ŠOVÁ` (má být `BENEŠOVÁ`) | **neopravuj v parseru.** Označ příznakem `_CORRUPT` a nech obnovu na `dq-standardizator` (registr jmen) nebo `dq-deduplikator` (čistý dvojník v klastru) |
 
 ```python
-s = re.sub(r"(^|(?<=\s))Ą", "Ľ", s)          # jednoznačné, deterministické
+s = re.sub(r"(^|(?<=\s))Ą", "Ľ", s)          # jednoznačné pravidlo — ale patří do standardizace
 corrupt = bool(re.search(r"[0-9]", s))       # číslice ve jménu = poškozeno, řeší se jinde
 ```
 
-Rozdělení je záměrné: parser dělá jen to, co je jisté. Rekonstrukce chybějícího písmene je
-odhad a patří tam, kde je proti čemu ho ověřit.
+**Parser dělí, neopravuje.** I deterministická oprava patří do standardizace jako zaregistrované
+pravidlo — jinak po ní nezůstane auditní stopa a nikdo nedohledá, čím se hodnota změnila.
+Jediná výjimka je znak, který brání samotnému rozkladu. Rekonstrukce chybějícího písmene je
+navíc odhad a patří tam, kde je proti čemu ho ověřit.
 
 ## Datum uložené jako text
 

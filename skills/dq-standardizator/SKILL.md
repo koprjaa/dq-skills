@@ -15,6 +15,10 @@ Pipeline: `dq-parser` → **dq-standardizator** → `dq-adresar` → `dq-imputat
 
 - **Nový sloupec `<ATRIBUT>_STD`, originál se nemění.** Před/po je evidence do zprávy a
   jediná cesta zpět, když se pravidlo ukáže jako špatné.
+- **Každá oprava je zaregistrované pravidlo**, ne ad-hoc `UPDATE`. Pravidlo má jméno, popis
+  vzoru, počet zasažených řádků a odkaz do metadatového repozitáře. Sem patří i deterministické
+  opravy, které vypadají triviálně (záměna znaku z migrace) — `dq-parser` je proto neopravuje,
+  jen označí. Bez registru pravidel nedohledáš, čím se hodnota mezi originálem a `_STD` změnila.
 
 ```sql
 ALTER TABLE PART_PARTY
