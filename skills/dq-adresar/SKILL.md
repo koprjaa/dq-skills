@@ -115,7 +115,7 @@ bylo 89 %" je užitečná informace do zprávy, ne důvod ten kód uložit.
 | `COALESCE(obec, mcast, cobce)` na straně registru | pokryje řádky s prázdnou obcí (v UIR-ADR ~51 %) |
 | první segment před pomlčkou z pole obce | řeší `Praha 5 - Smíchov` |
 | oříznutí PSČ na 5 číslic + vyřazení placeholderů (`99999`, `00000`) | odstraní falešné shody |
-| **fonetické algoritmy** (Soundex, Metaphone) | pro češtinu nepoužívej — jsou stavěné na angličtinu a vyrábějí falešné shody |
+| **fonetické algoritmy** (Soundex, Metaphone) | standardní nástroj unifikace, ale jazykově vázaný — obě klasické varianty jsou laděné na angličtinu a na češtině vyrábějí falešné shody. Použij variantu pro cílový jazyk, nebo je vynech a změř, o kolik shod tím přicházíš |
 
 Zvyšování match rate dělej **iterativně a měř po každém kroku**. Skok o desítky procent po
 jedné úpravě je podezřelý — zkontroluj vzorek, jestli nepáruješ nesmysly.

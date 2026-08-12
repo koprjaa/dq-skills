@@ -46,6 +46,13 @@ korespondenci s „Novakova".
 - **Standardizace nesmí měnit match key**, jinak se přerovnají klastry v deduplikaci.
   Oprava diakritiky `MARTÍNKOVA` → `MARTÍNKOVÁ` mění display, match key zůstává `MARTINKOVA`.
 
+- **Formáty ber z ISO, ne z hlavy.** Datum a čas `ISO 8601` (`YYYY-MM-DD`), měna `ISO 4217`
+  (`CZK`, `USD`), země `ISO 3166-1`. Vlastní formát znamená vlastní parser u každého konzumenta.
+
+- **Pojmenování podle kanonického modelu.** Přípony `_STD` (vyčištěná hodnota), `_FLAG` / `_IND`
+  (příznak), `_DATE` (datum); prefixy `LOV_` (číselník), `REF_` (registr), `V_` (view).
+  Konvence není kosmetika — generické ETL i monitoring na ní stojí.
+
 ## Zástupné hodnoty → NULL (nejdřív ze všeho)
 
 Zástupná hodnota není data. Než začneš standardizovat, převeď ji na NULL — jinak se
@@ -217,6 +224,24 @@ UPDATE <t> SET <col> = NULLIF(TRIM(<col>), '');
 Padding z `char(n)` odstraň globálně jako první, jinak každé pozdější porovnání potřebuje
 `TRIM` a někde se na něj zapomene. Zároveň navrhni změnu typu na `varchar` — jinak se padding
 vrátí při příštím zápisu (patří do `dq-strazce`).
+
+## Kdy nestandardizovat
+
+- **Přestandardizování je taky defekt.** Sjednocení všeho na jeden tvar zabije sémantický
+  detail, který někdo potřebuje — lokální variantu názvu, historický zápis, rozlišení, které
+  v kanonickém tvaru zanikne. Standardizuj to, co má konzumenta. Zbytek nech být.
+- **Míra oprav se řídí užitím.** Do provozního systému patří kontrola na vstupu; do
+  regulatorního reportingu absolutní formální shoda s předepsaným modelem; do trénovacích dat
+  pro model spíš robustnost — tam je trocha šumu levnější než agresivní čištění, které umaže
+  signál.
+- **Žádná automatická metoda není stoprocentní.** Každý plošný replace vyrobí i falešně
+  pozitivní případy. U korespondence a osobních údajů to není statistika, ale právní
+  a reputační riziko: špatně sloučená korespondenční adresa umí doručit dopis o životním
+  pojištění tomu, kdo o smlouvě neměl vědět. Nad prahem jistoty automat, pod prahem
+  **semi-automatický režim s eskalací** na stewarda nebo obchodníka. Nikdy tichý zápis.
+- **Čištění je náprava symptomu.** Dokud se pravidlo nedostane na vstup do aplikace, defekt
+  se vrátí s dalším loadem — princip *Gemba Kaizen*: oprav proces v místě vzniku, ne jeho
+  výsledek v datovém skladu. Prevenci řeší `dq-strazce`.
 
 ## Výstup standardizátoru
 
