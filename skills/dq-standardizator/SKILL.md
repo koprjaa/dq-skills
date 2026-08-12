@@ -60,6 +60,9 @@ UPDATE PART_PARTY SET PARTY_FNAME = NULL, PARTY_LNAME = NULL
 WHERE PARTY_TYPE='C' AND TRIM(UPPER(COALESCE(PARTY_FNAME,''))) IN ('NA','N/A','NULL','.');
 ```
 
+Odborně jde o **maskovanou neúplnost** (disguised missing data): hodnota v poli je, ale data
+za ní nejsou, takže profiling vykázal falešně vysokou úplnost.
+
 Spočítej a zapiš, kolik jich bylo — je to before/after evidence a zároveň korekce metriky
 úplnosti (úplnost po převodu klesne, a to je správně: dřív byla falešně nadhodnocená).
 
@@ -81,6 +84,10 @@ Do exportu a do odvozených atributů pouštěj jen `RC_VALID`. `RC_USABLE` slou
 dedup signál uvnitř pipeline — čitelné, ale checksum-rozbité rodné číslo pořád spolehlivě
 identifikuje tutéž osobu ve dvou záznamech, ale publikovat se nesmí.
 
+Dvojice příznaků je moje rozšíření: kurz 4IZ562 do `_STD` ukládá rovnou jen plně validní
+hodnoty. Rozpor to není — nevalidní hodnota se do `_STD` nedostane ani tady, jen si vedle
+držím informaci, že je *čitelná*, protože bez ní přijdeš o část dedup signálu.
+
 ## IČO
 
 ```sql
@@ -90,6 +97,11 @@ WHERE PARTY_TYPE='C' AND LENGTH(REGEXP_REPLACE(PARTY_CREGNUM,'[^0-9]','')) BETWE
 ```
 
 Nikdy neukládej IČO do číselného typu — přijdeš o vedoucí nuly a `00123456` se stane `123456`.
+Správný typ je `char(8)`: délka je garantovaná, takže je to výjimka z pravidla „char nahradit
+varcharem" (`dq-strazce`) — to platí na proměnlivě dlouhý text, ne na kód s pevnou délkou.
+
+Doplnění nul na osm znaků není kosmetika: kratší IČO mají třeba organizační složky státu
+a bez zarovnání se na registr nenapojí.
 
 ## Tituly — napojení na referenční slovník
 

@@ -27,7 +27,7 @@ remediaci**, ne před ní.
 
 | Vada | Oprava | Proč |
 |---|---|---|
-| `char(n)` na proměnlivém textu | `varchar(n)` | zdroj paddingu a tichého useknutí |
+| `char(n)` na proměnlivém textu | `varchar(n)` | zdroj paddingu a tichého useknutí — ale u kódu s garantovanou pevnou délkou (IČO `char(8)`) je `char` správně |
 | pevná délka na kódu, který se může rozšířit | delší `varchar` | poštovní kód `char(5)` architektonicky vylučuje zahraniční adresy |
 | číselný typ na kódu s vedoucí nulou | `varchar` | ztráta nul u identifikátorů a poštovních kódů |
 | textový příznak Y/N | `BOOLEAN NOT NULL DEFAULT` | tři různé implementace téhož (`char(1)` / `char(4)` / `tinyint`) |
