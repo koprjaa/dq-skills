@@ -27,10 +27,10 @@ ALTER TABLE PART_PARTY
   ADD PARTY_TITBEF_STD  varchar(10), ADD PARTY_TITAFT_STD varchar(10);
 ```
 
-- **Dva různé výstupy z jedné hodnoty**, nepleť si je. Kurz 4IZ562 pro ně má dvě různá jména
-  a je to podstatný rozdíl, ne slovíčkaření:
+- **Dva různé výstupy z jedné hodnoty**, nepleť si je. Metodicky mají dvě různá jména a je to
+  podstatný rozdíl, ne slovíčkaření:
 
-| Výstup | Kurz tomu říká | K čemu | Jak vypadá |
+| Výstup | Metodický název | K čemu | Jak vypadá |
 |---|---|---|---|
 | **display** (`_STD`) | **standardizace** | zobrazení, korespondence, reporting, export | `Nováková`, `MUDr.`, `Praha 5` |
 | **match key** (`_MATCH`) | **unifikace** | porovnávání, dedup, JOIN na registr | `NOVAKOVA`, `mudr`, `praha5` |
@@ -73,7 +73,23 @@ za ní nejsou, takže profiling vykázal falešně vysokou úplnost.
 Spočítej a zapiš, kolik jich bylo — je to before/after evidence a zároveň korekce metriky
 úplnosti (úplnost po převodu klesne, a to je správně: dřív byla falešně nadhodnocená).
 
-## Rodné číslo
+## Doménová pravidla — pracovní příklad (ČR)
+
+Následující sekce až po Padding jsou **rozpracovaný příklad pro českou jurisdikci**, ne
+univerzální předpis. Přenositelná je struktura, ne konstanty:
+
+| Univerzální postup | V příkladu níž |
+|---|---|
+| identifikátor osoby: strip → formát → checksum → dva příznaky | rodné číslo, mod 11 |
+| identifikátor firmy: doplnění na pevnou délku, textový typ | IČO, `char(8)` |
+| poštovní kód: kanonický tvar, textový typ, žádné dopočítávání | PSČ, 5 číslic |
+| telefon: strip → národní prefix → délka → typ podle prefixu | +420, mobil 6/7, pevná 2–5 |
+| jména: display vs. match, oprava proti registru jmen | přechylování, česká diakritika |
+
+Ekvivalenty pro jiné jurisdikce jsou v mapovací tabulce v `dq-pipeline`, sekce Přenositelnost.
+Když měníš zemi, měň konstanty a registry — pořadí kroků zůstává.
+
+### Identifikátor osoby (rodné číslo)
 
 ```sql
 UPDATE PART_PARTY SET PARTY_RC_STD = REPLACE(TRIM(PARTY_RC),'/','')
@@ -91,11 +107,12 @@ Do exportu a do odvozených atributů pouštěj jen `RC_VALID`. `RC_USABLE` slou
 dedup signál uvnitř pipeline — čitelné, ale checksum-rozbité rodné číslo pořád spolehlivě
 identifikuje tutéž osobu ve dvou záznamech, ale publikovat se nesmí.
 
-Dvojice příznaků je moje rozšíření: kurz 4IZ562 do `_STD` ukládá rovnou jen plně validní
-hodnoty. Rozpor to není — nevalidní hodnota se do `_STD` nedostane ani tady, jen si vedle
-držím informaci, že je *čitelná*, protože bez ní přijdeš o část dedup signálu.
+Dvojice příznaků je moje rozšíření: přísnější (a v akademické metodice výchozí) varianta
+ukládá do `_STD` rovnou jen plně validní hodnoty. Rozpor to není — nevalidní hodnota se do
+`_STD` nedostane ani tady, jen si vedle držím informaci, že je *čitelná*, protože bez ní
+přijdeš o část dedup signálu.
 
-## IČO
+### Identifikátor firmy (IČO)
 
 ```sql
 -- doplň vedoucí nuly na 8, nečíselné zahoď
@@ -110,7 +127,7 @@ varcharem" (`dq-strazce`) — to platí na proměnlivě dlouhý text, ne na kód
 Doplnění nul na osm znaků není kosmetika: kratší IČO mají třeba organizační složky státu
 a bez zarovnání se na registr nenapojí.
 
-## Tituly — napojení na referenční slovník
+### Tituly — napojení na referenční slovník
 
 Vzor, který funguje: **normalizuj obě strany stejně** (lower + odstranění teček + trim) a
 napoj přes normalizovaný tvar, ale ulož **kanonickou hodnotu z registru**.
@@ -136,7 +153,7 @@ Pozor na registr samotný: může obsahovat duplicitní hodnotu pod dvěma kódy
 CODE 19 i 20) nebo překlep v popisu (`Bacherol`). Pak je napojení nejednoznačné — sluč kódy
 v registru dřív, než na něj napojíš provoz.
 
-## Jména a příjmení
+### Jména a příjmení
 
 Trojice kroků v tomhle pořadí:
 
@@ -175,7 +192,7 @@ if is_lname and disp.endswith("ova"):
 Co registr neopraví, zůstává poškozené s příznakem — sloučí to až `dq-deduplikator`
 z čistého dvojníka téže osoby v klastru.
 
-## E-mail
+### E-mail
 
 ```python
 s = str(v).strip().lower()
@@ -188,7 +205,7 @@ Ta dvě `replace` jsou legitimní jen proto, že jde o **prokázaně systematick
 (22 694 řádků jednoho vzoru), ne o překlepy. Ověř to nejdřív četností, jinak si vyrobíš
 falešně platné adresy. Do exportu pouštěj jen `valid`.
 
-## Telefon
+### Telefon (číslovací plán ČR)
 
 ```python
 d = re.sub(r"\D", "", str(v))
@@ -202,7 +219,7 @@ if d[0] in ("2", "3", "4", "5"):   return (None, d)        # pevná
 Rozdělení mobil/pevná není kosmetika: pevná linka vedená jako mobil je důvod, proč SMS kanál
 tiše nefunguje. Standardizace je zároveň **reklasifikace typu kontaktu**.
 
-## PSČ
+### Poštovní kód (PSČ)
 
 ```sql
 UPDATE PARTY_ADDRESS SET ADDR_ZIP_STD = REGEXP_REPLACE(ADDR_ZIP,'[^0-9]','')

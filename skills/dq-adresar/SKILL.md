@@ -10,9 +10,9 @@ navěsit geokódování, pricing podle lokality a identifikaci domácnosti. V po
 geokódování přímo vstupem do sazby — povodňová zóna, riziko krádeže, vzdálenost od hasičů —
 takže nenapojená adresa není jen nedoručitelná, ale i špatně naceněná.
 
-Tenhle krok se v kurzu 4IZ562 jmenuje **obohacování dat (data enrichment)** — napojení na
-externí autoritativní zdroj a převzetí hodnoty, kterou vlastní data nenesou. Adresní registr
-je jen nejčastější případ; totéž platí pro registr firem nebo klasifikaci odvětví.
+Metodicky je tenhle krok **obohacování dat (data enrichment)** — napojení na externí
+autoritativní zdroj a převzetí hodnoty, kterou vlastní data nenesou. Adresní registr je jen
+nejčastější případ; totéž platí pro registr firem nebo klasifikaci odvětví.
 
 Pipeline: `dq-standardizator` → **dq-adresar** → `dq-imputator` → `dq-deduplikator`.
 Předpoklad: adresa je už atomizovaná (`dq-parser`) a poštovní kód standardizovaný.

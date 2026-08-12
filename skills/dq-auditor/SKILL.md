@@ -36,9 +36,10 @@ Je to standard ISACA a má tři důvody: anomálie může mít legitimní byznys
 z dat nevidíš; nikdo nemá rád překvapení na boardu; a doporučení bude implementovat ten, kdo
 je slyšel poprvé od tebe, ne z plátna.
 
-Slovník kurzu, když píšeš do školy: COPQ → **náklady z nekvality dat**, kořenová příčina →
-**prapůvodní příčina**, závažnost → **severita**, nápravná opatření → **doporučená opatření**.
-Matice užití se jmenuje stejně (nebo BUS matrix).
+České odborné názvosloví, když zpráva jde do akademického nebo auditního prostředí:
+COPQ → **náklady z nekvality dat**, kořenová příčina → **prapůvodní příčina**, závažnost →
+**severita**, nápravná opatření → **doporučená opatření**. Matice užití se jmenuje stejně
+(nebo BUS matrix).
 
 Sekce **Omezení užití** a **Identifikovaná omezení při realizaci auditu** nejsou formalita:
 audit platí ke snapshotu, k danému rozsahu a s danými zdroji. Bez toho je zpráva nepodložená.
@@ -67,8 +68,7 @@ tomu, co ti z dat vyšlo, a zpráva se stane obhajobou nálezů místo měření
 Krok 9 je taky výstup, ne příprava: seznam registrů, na které se nemá kdo napojit, patří do
 doporučení. Chybějící referenční zdroj je nález.
 
-Těch dvanáct kroků skládá dohromady metodiky, které učí kurz 4IZ562 — když zprávu obhajuješ,
-jmenuj
+Těch dvanáct kroků skládá dohromady zavedené metodiky — když zprávu obhajuješ, jmenuj
 zdroj: **TIQM** (English) pro náklady nekvality, **Ten Steps** (McGilvray) pro matici užití
 a životní cyklus POSMAD, **TDQM** (Wang, MIT) pro IP-Map toku dat, **ISACA ITAF / COBIT**
 (standardy S7, G20) pro náležitosti a nezávislost auditorské zprávy. Bez uvedení rámce to
@@ -95,7 +95,7 @@ Interpretační odstavce jsou to, co odlišuje zprávu od výpisu. Skládej je t
 
 Ke každému velkému nálezu připoj **křížovou kontrolu** s příponou `b` (viz `dq-pipeline`).
 Křížové testování je standardní metoda; přípona `b` a rozsah tří až pěti odstavců na doménu
-jsou moje konvence, ne značení z kurzu.
+jsou moje konvence, ne zavedené značení.
 Nález `A1` (konstanta „CZE") je podezření; `A1b` (2 633 klientů s literálem „cizinec" v rodném
 čísle a u všech 100 % země „CZE") je důkaz.
 

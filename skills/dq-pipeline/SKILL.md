@@ -36,11 +36,11 @@ pořadí**.
 
 ## Vlastnosti dat — co se měří
 
-Pozor na dvě vrstvy modelu. Kurz 4IZ562 nazývá **dimenzemi** pětici nadřazených kategorií
-(endogenní, časové, kontextuální, dimenze užití, ekonomická). To, co se měří v tabulce níže,
-jsou **vlastnosti (charakteristiky) dat** spadající pod ně. V ostatních skillech píšu
-„dimenze" jako zkratku pro tuhle šestici — pro akademické publikum to rozliš, jinak zaměníš
-nadřazenou kategorii s měřenou vlastností.
+Pozor na dvě vrstvy modelu. V akademické tradici (TDQM, Wang a Strong, MIT) jsou **dimenzemi**
+nadřazené kategorie — endogenní, časové, kontextuální, dimenze užití, ekonomická — zatímco to,
+co se měří v tabulce níže, jsou **vlastnosti (charakteristiky) dat** spadající pod ně.
+V ostatních skillech píšu „dimenze" jako zkratku pro tuhle šestici; pro akademické nebo auditní
+publikum to rozliš, jinak zaměníš nadřazenou kategorii s měřenou vlastností.
 
 | Vlastnost | Sloupec v MDR | Otázka |
 |---|---|---|
@@ -60,8 +60,9 @@ Defekt schématu (`char(4)` pro Y/N příznak, jednoznakový PK, chybějící FK
 není samostatná vlastnost, ale **technická příčina nekvality**. Klasifikuj ho do vlastnosti,
 jejíž měření kazí, a v popisu uveď „(struktura)".
 
-Šestice výše pokrývá jen to, co se dá změřit dotazem nad snapshotem. Kurz zná i skupiny, které
-tahle pipeline neměří — přiznej to ve zprávě, místo aby ses tvářil, že měříš kvalitu celou:
+Šestice výše pokrývá jen to, co se dá změřit dotazem nad snapshotem. Oborový model zná
+i skupiny, které tahle pipeline neměří — přiznej to ve zprávě, místo aby ses tvářil, že
+měříš kvalitu celou:
 
 | Skupina | Příklady | Jak se měří |
 |---|---|---|
@@ -91,12 +92,12 @@ směrem. Vždy filtruj na typ entity.
 
 Kódování: písmeno = doména, číslo = pořadí, přípona `b` = křížová kontrola k témuž jevu.
 
-Tenhle formát je provozní konvence, ne šablona z kurzu — 4IZ562 vede zjištění jako atribut
-a naměřenou úroveň vlastnosti, závažnost a dopad rozvádí slovně v manažerském shrnutí.
-Tabulka jen zaručí, že se na dopad a závažnost u žádného nálezu nezapomene.
+Tenhle formát je provozní konvence, ne předepsaná šablona. Akademické zprávy vedou zjištění
+jako atribut a naměřenou úroveň vlastnosti a dopad rozvádějí slovně v manažerském shrnutí;
+tabulka jen zaručí, že se na dopad a závažnost u žádného nálezu nezapomene.
 
-Slovník, když píšeš pro akademické nebo auditní publikum: „zjištění" = **defekt**,
-**diskrepance** nebo **anomálie**, „závažnost" = **severity**.
+Slovník pro akademické nebo auditní publikum: „zjištění" = **defekt**, **diskrepance** nebo
+**anomálie**; „závažnost" = **severita** (severity).
 
 | Stupeň | Kritérium |
 |---|---|
@@ -106,8 +107,8 @@ Slovník, když píšeš pro akademické nebo auditní publikum: „zjištění"
 | **Nízké** | hygiena, kosmetika, konzistence pojmenování |
 
 Stupně odpovídají prioritám v matici užití dat (Critical / High / Medium / Low). Kritéria
-v pravém sloupci jsou moje operacionalizace — kurz pro odvození závažnosti odkazuje na
-klasifikaci incidentů v zákaznické podpoře, ne na pevný číselník.
+v pravém sloupci jsou moje operacionalizace; obvyklý zdroj inspirace pro škálu severity je
+klasifikace incidentů v zákaznické podpoře, ne pevný oborový číselník.
 
 ## Křížová kontrola je nejcennější nález
 
@@ -132,9 +133,10 @@ Skilly popisují **role**, ne konkrétní tabulky. Než začneš, namapuj schém
 | **číselník (LOV)** | interní doména povolených hodnot | typy, stavy, kategorie, příznaky |
 | **referenční registr (REF)** | externí autoritativní zdroj | registr adres, osob, klasifikace odvětví, ISO číselníky |
 
-Kurz 4IZ562 dělí data na čtyři třídy: **kmenová (master) data**, **transakční data**,
-**číselníky (LOV)** a **referenční data**. Satelity a katalog jsou moje jemnější dělení uvnitř
-prvních dvou, ne kanonické kategorie — v akademickém textu je tak i pojmenuj.
+Kanonická klasifikace (DAMA-DMBOK a spol.) zná čtyři třídy: **kmenová (master) data**,
+**transakční data**, **číselníky (LOV)** a **referenční data**. Satelity a katalog jsou moje
+jemnější dělení uvnitř prvních dvou, ne standardní kategorie — v odborném textu je tak
+i pojmenuj.
 
 Příklady v ostatních skillech pocházejí z auditu pojišťovny (`PART_PARTY`, `PARTY_ADDRESS`,
 `PARTY_CONTACT`, `PROD_CONTRACT`, `LOV_*`, `REF_*`) — ber je jako ilustraci role, ne jako
@@ -182,7 +184,7 @@ specifický — pro neflektivní jazyky ho vypusť.
 ## Metodické ukotvení
 
 Pipeline je provozní destilát, ne originální metodika. Když se má obhájit před akademickým
-nebo auditním publikem, opři ji o rámce, na kterých stojí (podle kurzu 4IZ562):
+nebo auditním publikem, opři ji o rámce, na kterých stojí:
 
 | Rámec | Co z něj plyne | Kde to v pipeline je |
 |---|---|---|
@@ -195,7 +197,7 @@ nebo auditním publikem, opři ji o rámce, na kterých stojí (podle kurzu 4IZ5
 | **ISO 25012** | 15 charakteristik, inherentní vs. systémově závislé | vlastnosti dat výše |
 | **modely zralosti DGOV** | pětistupňová škála Initial → Optimized | cíl `dq-strazce`, ne jednorázový audit |
 
-Kurz shrnuje disciplínu do tří pilířů („datová kvalita 1-2-3") a deset skillů se do nich mapuje:
+Obor shrnuje disciplínu do tří pilířů („datová kvalita 1-2-3") a deset skillů se do nich mapuje:
 **audit** (`dq-profiler`, `dq-validator`, `dq-auditor`) → **zlepšení** (`dq-parser` až
 `dq-deduplikator`) → **monitoring** (`dq-strazce`).
 
@@ -207,7 +209,7 @@ Kurz shrnuje disciplínu do tří pilířů („datová kvalita 1-2-3") a deset 
 - Nikdy nekonstatuj kvalitu bez dotazu. Nejde-li ověřit, napiš „neověřeno" a proč.
 - Žádné tiché coercion, které schová defekt (`CAST` bez kontroly, `COALESCE` na 0).
 - 100% konstanta ve sloupci = vždy finding, ne „čistá data". Plošně doplněná defaultní
-  hodnota má v kurzu vlastní jméno: **fantom**.
+  hodnota má v českém názvosloví vlastní jméno: **fantom**.
 - Metriky stabilní při rerunu — zafixuj snapshot datum, nepoužívej `CURRENT_DATE` v metrikách.
 - Anti-join (`LEFT JOIN … WHERE … IS NULL`), ne `NOT IN` — `NOT IN` s NULL vrátí prázdno.
 - Nikdy nepřepisuj původní sloupec. Remediace jde do `*_STD` sloupců, originál zůstává jako

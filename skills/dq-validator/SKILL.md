@@ -158,14 +158,12 @@ UPDATE DQM_MDR SET COMPLETENESS = (
 WHERE TABLE_NAME = 'PART_PARTY' AND COLUMN_NAME = 'PARTY_FNAME';
 ```
 
-Kurz 4IZ562 používá pro tytéž vlastnosti pětipísmenné kódy: `CMPLT` (úplnost), `SNCOR`
-a `SMCOR` (syntaktická a sémantická správnost), `INCNS` a `EXCNS` (interní a externí
-konzistentnost), `UNQNS` (unikátnost). Když odevzdáváš do kurzu, drž se jich — a u dvojice
-`SNCOR`/`SMCOR` si ověř zadání, ty dva kódy se snadno prohodí.
+Názvy sloupců si drž konzistentní s tím, co používá tvoje prostředí — vedle rozepsaných názvů
+jsou v oběhu i pětipísmenné kódy `CMPLT`, `SNCOR`, `SMCOR`, `INCNS`, `EXCNS`, `UNQNS`.
 
 **Naplněnost MDR** je sama o sobě metrika. Když repozitář eviduje 39 sloupců ze 4 tabulek,
 zatímco databáze má 23 tabulek, je to finding („MDR nepokrývá univerzum") a zároveň úkol —
-rozšířit ho. Neříkej tomu *pokrytí*, ten pojem je obsazený: v kurzu znamená kontextuální
+rozšířit ho. Neříkej tomu *pokrytí*: ten pojem je v DQ názvosloví obsazený pro kontextuální
 vlastnost dat, tedy jakou část možných hodnot atribut vůbec obsahuje.
 
 Ne každá vlastnost dává smysl u každého sloupce. Nevyplňuj nulou, nech NULL a uveď proč —

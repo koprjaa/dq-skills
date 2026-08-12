@@ -10,7 +10,7 @@ kterého se dá klastr kdykoli zrekonstruovat.
 
 Pipeline: `dq-imputator` → **dq-deduplikator** → `dq-strazce`.
 
-Slovník, když píšeš do školy: klastr = **shluk / match group**, MCODE = **porovnávací kód**,
+České odborné názvosloví: klastr = **shluk / match group**, MCODE = **porovnávací kód**,
 golden record = **konsolidovaný klient** (Single Customer View, unifikovaná báze UCD).
 
 **Bez předchozích kroků to nedělej.** Dedup nad nestandardizovanými daty najde zlomek duplicit
@@ -65,10 +65,10 @@ Když u nečitelného identifikátoru chybí i odvozené datum, použij jako **k
 původní uložené datum (je-li věrohodné) — maximalizuje dedup signál, aniž by se cokoli
 nevalidního dostalo na výstup.
 
-Tohle je moje rozšíření, ne postup z kurzu: 4IZ562 pouští do párování i do odvozování jen
-identifikátory, které prošly kontrolním součtem. Rozpor to není (nevalidní hodnota se ani
-tady nikam nepublikuje), ale když to obhajuješ, přiznej to jako vlastní volbu a ukaž na ní
-rozdíl v počtu sloučení — je to přesně ta varianta A z porovnání klíčů níž.
+Je to volnější než akademický standard, který do párování i do odvozování pouští jen
+identifikátory po kontrolním součtu. Rozpor to není — nevalidní hodnota se ani tady nikam
+nepublikuje — ale přiznej to jako vlastní volbu a ukaž na ní rozdíl v počtu sloučení. Je to
+přesně ta varianta A z porovnání klíčů níž.
 
 ## Kde deterministický klíč nestačí
 

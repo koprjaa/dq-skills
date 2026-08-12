@@ -176,7 +176,7 @@ třídu entit, jedno období nebo jeden kanál je na ní vidět hned.
 ### Dvě pasti
 
 - **Deformace rozdělení.** Nahrazení chybějících hodnot jedinou konstantou (průměr, medián)
-  vyrobí v histogramu nepřirozený pík uprostřed — v kurzu 4IZ562 *Čechové na Řípu*. Rozptyl
+  vyrobí v histogramu nepřirozený pík uprostřed (české přezdívce *Čechové na Řípu*). Rozptyl
   klesne, korelace se rozjedou a závěry z takových dat neplatí, i když tabulka vypadá úplně.
 - **Imputační paradox.** Model natrénovaný nad daty doplněnými explicitním modelem vykazuje
   *lepší* metriky (nižší MAE) než model nad původními úplnými daty. Není lepší — imputace do

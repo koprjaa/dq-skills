@@ -7,8 +7,8 @@ description: Technický profiling databáze — inventura tabulek, struktura a d
 
 První krok. **Hledej tvar dat, ne ještě čísla o chybách.** Symptomů si všímej — odlehlé
 hodnoty, anomálie, podezřelé konstanty sem patří — ale systematické měření podle pravidel
-dělá až `dq-validator`, poté co víš, co v tabulkách vůbec je. Profiler končí seznamem tabulek, jejich rolí a seznamem
-podezření, které validator ověří.
+dělá až `dq-validator`, poté co víš, co v tabulkách vůbec je. Profiler končí seznamem
+tabulek, jejich rolí a seznamem podezření, které validator ověří.
 
 Pipeline: **dq-profiler** → `dq-validator` → `dq-auditor` → remediace. Společný standard
 (dimenze, formát zjištění) je v `dq-pipeline`.
@@ -158,7 +158,7 @@ Tohle hledej v distribucích a vzorcích. Každý řádek je hypotéza pro `dq-v
 
 | Vzorec | Jak vypadá | Kořenová příčina | Ověření |
 |---|---|---|---|
-| **Plošná konstanta** (kurz: *fantom*) | jedna hodnota u 100 % řádků | sloupec plněn defaultem, ne ze vstupu | křížová kontrola s atributem, který konstantě odporuje |
+| **Plošná konstanta** (*fantom*) | jedna hodnota u 100 % řádků | sloupec plněn defaultem, ne ze vstupu | křížová kontrola s atributem, který konstantě odporuje |
 | **Zástupná hodnota místo NULL** | `NA`, `NEVYPLNENO`, `cizinec`, `9999999999`, `.` | vstupní pole je NOT NULL, operátor musí něco napsat | frekvenční distribuce, TOP hodnoty |
 | **Sentinel datum** | `2999-12-31`, `2999-01-01`, `1900-01-01`, `3000-01-01` | systém neumí NULL / „nekonečná platnost" | `MAX()`/`MIN()` na datumech |
 | **Padding na fixní délku** | `'PhDr      '`, délka přesně `n` | import do `char(n)` bez trimu | délková distribuce |
@@ -176,8 +176,8 @@ Tohle hledej v distribucích a vzorcích. Každý řádek je hypotéza pro `dq-v
 | **Mrtvá položka číselníku** | kód existuje, 0 použití | zrušený produkt / rezerva / překlep | LEFT JOIN z číselníku na provoz |
 | **Torzo referenční tabulky** | 1 000 řádků tam, kde má být registr | vadný import nebo omezený vzorek od dodavatele | pokrytí = kolik provozních hodnot je v REF |
 
-Zástupné a sentinelové hodnoty plošně doplněné systémem zastřešuje kurz 4IZ562 jedním
-pojmem: **fantom**.
+Zástupné a sentinelové hodnoty plošně doplněné systémem zastřešuje české názvosloví jedním
+pojmem: **fantom** (phantom).
 
 ## Výstup profileru
 
