@@ -21,8 +21,13 @@ Pipeline: `dq-adresar` → **dq-imputator** → `dq-deduplikator`.
 | 5 | **statistická imputace** (medián, modus) | nízká | jen analytické kopie, nikdy produkce |
 | 6 | **modelová imputace** (kNN, strom) | nejnižší | výzkum, ne provozní data |
 
-Do produkce jdou metody 1–4. Metody 5–6 patří do analytické vrstvy a **musí být označené
-příznakem**, aby se odvozená hodnota nedala zaměnit s naměřenou.
+Do produkce jdou metody 1–4 — databázové a implicitní. Metody 5–6 jsou **explicitní modely**
+a patří do analytické vrstvy, kde **musí být označené příznakem**, aby se odvozená hodnota
+nedala zaměnit s naměřenou.
+
+U modelové imputace navíc platí požadavek na **vysvětlitelnost**: musíš umět říct, čím byla
+konkrétní hodnota doplněna a proč. Model, jehož výstup neumíš obhájit, do dat nepatří ani
+v analytické vrstvě.
 
 ## Železná pravidla
 
@@ -30,11 +35,14 @@ příznakem**, aby se odvozená hodnota nedala zaměnit s naměřenou.
   (checksum, ne jen formát). Datum narození spočítané z rodného čísla s rozbitým checksumem je
   vymyšlené datum s tváří faktu.
 - **Nikdy nepřepiš vyplněnou hodnotu.** Imputace plní jen NULL. Kolize (uložená hodnota se liší
-  od odvozené) je *nález pro audit*, ne důvod k přepsání.
+  od odvozené) je *nález pro audit* — defekt vnitřní konzistentnosti — ne důvod k přepsání.
+  Který ze dvou zdrojů je věrohodnější, se rozhoduje mimo imputátor a s odůvodněním.
 - **Vždy do `_STD` sloupce**, nikdy do originálu. Původní NULL musí zůstat viditelné.
 - **Označ původ.** Buď zvláštní příznak (`_IMPUTED`), nebo oddělený sloupec. Bez toho nelze
   spočítat, kolik dat je naměřených a kolik dopočtených.
-- **Sanity check po imputaci.** Rozsah, distribuce, extrémy. Odvození roku z dvojčíslí bez
+- **Sanity check po imputaci.** Rozsah, distribuce, extrémy — a nejen technický rozsah typu,
+  ale **byznysové omezení**: datum narození ne v budoucnosti, věk pojistníka nad hranicí
+  svéprávnosti, datum smlouvy v době existence produktu. Odvození roku z dvojčíslí bez
   správného století umí vyrobit klienty narozené v roce 2074.
 - **Změř před/po.** Úplnost atributu před imputací, po imputaci, a kolik zbývá — to je hlavní
   výstup tohoto kroku.
