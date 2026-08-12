@@ -16,6 +16,10 @@ Pipeline: audit → **dq-parser** → `dq-standardizator` → `dq-adresar` → `
   Original je evidence pro before/after a záchranná síť, když parser šlápne vedle.
 - **Deterministicky, ne heuristikou.** Parser, který v 3 % případů uhodne špatně, vyrobí
   tichá poškození. Když si pravidlem nejsi jistý, nech NULL a spočítej, kolik jich zbylo.
+  Platí pro strukturované pole se známým vzorem — adresa, jméno, datum. U volného textu,
+  kde vzor neexistuje, je statistické rozpoznávání entit (NER, spaCy) legitimní nástroj,
+  ale jeho výstup je odhad: patří k němu skóre jistoty a příznak, a do produkčního sloupce
+  nejde bez revize.
 - **Změř míru rozparsování** — kolik řádků se povedlo rozložit. To je metrika do zprávy.
 - Parsuj **před** čímkoli dalším: standardizace, imputace i deduplikace stojí na atomických polích.
 
@@ -111,6 +115,10 @@ WHERE PARTY_TYPE='P' AND LENGTH(SUBSTRING_INDEX(PARTY_FNAME,' ',2)) > 1;
 `Ing. Jan Novák` v `PARTY_NAME`. Detekuj podle shody prvního tokenu se slovníkem titulů,
 ne podle tečky — `J. Novák` je iniciála, ne titul.
 
+Slovníkem je číselník titulů (`REF_*_TITBEF` pro tituly před jménem, `TITAFT` za ním) a shodu
+dělej fuzzy, protože v datech vedle sebe stojí `MuDr`, `MUDr.` i `Mudr`. Parser titul jen
+oddělí; převod na kanonický tvar je práce pro `dq-standardizator`.
+
 ### Kódovací chyby
 
 Dvě různé věci, dvě různá řešení:
@@ -145,5 +153,6 @@ tichý swap nezachytí a rozseje ho po celé tabulce.
 
 - Nové `_STD` sloupce s atomickými hodnotami, originály nedotčené.
 - Míra rozparsování na každou složku (`% řádků s neprázdným výsledkem`).
-- Seznam řádků, které parser nerozložil, s důvodem — vstup pro ruční review nebo pro
-  rozhodnutí „tohle je mimo rozsah".
+- **Chybová tabulka** řádků, které parser nerozložil, s důvodem u každého — auditní stopa
+  o tom, proč záznam neprošel. Vstup pro ruční review nebo pro rozhodnutí „tohle je mimo
+  rozsah".
