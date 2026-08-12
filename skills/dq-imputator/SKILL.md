@@ -1,6 +1,6 @@
 ---
 name: dq-imputator
-description: Doplňování chybějících hodnot — odvození z jiného atributu téhož záznamu, agregace z navázaných tabulek, lookup do referenčního registru, defaultní kategorie, statistická a modelová imputace, a hlavně pravidla kdy neimputovat. Krok remediace po dq-adresar, před dq-deduplikator. Použij, když se mají "doplnit chybějící hodnoty", "dopočítat datum nebo pohlaví", "imputace", "obohatit data z registru", "co s NULL hodnotami". Keywords: imputace, doplnění chybějících hodnot, odvození, derived column, lookup, obohacení dat, enrichment, missing values.
+description: Doplňování chybějících hodnot — odvození z jiného atributu téhož záznamu, agregace z navázaných tabulek, lookup do referenčního registru, defaultní kategorie, statistická a modelová imputace, a hlavně pravidla kdy neimputovat. Krok remediace po dq-adresar, před dq-deduplikator. Použij, když se mají "doplnit chybějící hodnoty", "dopočítat datum nebo pohlaví", "imputace", "obohatit data z registru", "co s NULL hodnotami". Keywords: imputace, doplnění chybějících hodnot, odvození, derived column, lookup, obohacení dat, enrichment, missing values, MCAR, MAR, MNAR, mechanismus výskytu, Buckova metoda, hot deck.
 ---
 
 # Imputátor — doplnění chybějících hodnot
@@ -18,16 +18,18 @@ Pipeline: `dq-adresar` → **dq-imputator** → `dq-deduplikator`.
 | 2 | **agregace z navázané tabulky** | deterministická | datum vzniku vztahu = minimum z transakcí |
 | 3 | **lookup do referenčního registru** | vysoká | sektor, klasifikace odvětví, právní forma, obec podle kódu adresy |
 | 4 | **defaultní kategorie pro celou třídu entit** | metodická | „fyzická osoba patří do sektoru domácnosti" |
-| 5 | **statistická imputace** (medián, modus) | nízká | jen analytické kopie, nikdy produkce |
-| 6 | **modelová imputace** (kNN, strom) | nejnižší | výzkum, ne provozní data |
+| 5 | **bez modelu** (průměr, medián, modus, midrange) | nízká | deformuje rozdělení, viz níže |
+| 6 | **implicitní model** (Hot Deck, Cold Deck, k-NN) | střední, ale dohledatelná | analytická vrstva, s příznakem |
+| 7 | **explicitní model** (Buckova metoda, logistická regrese, Naive Bayes, stromy, MCMC) | nejnižší | modelování a výzkum |
 
-Do produkce jdou metody 1–4 — databázové a implicitní. Metody 5–6 jsou **explicitní modely**
-a patří do analytické vrstvy, kde **musí být označené příznakem**, aby se odvozená hodnota
-nedala zaměnit s naměřenou.
+Metody 1–4 (databázové techniky, odvození z ostatních hodnot) jdou do produkce bez diskuse.
+Výš rozhoduje **vysvětlitelnost, ne to, jestli je metoda statistická**:
 
-U modelové imputace navíc platí požadavek na **vysvětlitelnost**: musíš umět říct, čím byla
-konkrétní hodnota doplněna a proč. Model, jehož výstup neumíš obhájit, do dat nepatří ani
-v analytické vrstvě.
+- Robustní a auditovatelná metoda — Buckova (podmíněný průměr z regrese), Hot Deck — se do
+  provozu dostat může, s příznakem a s popsaným postupem.
+- Black box (AutoML, k-NN nad desítkami proměnných, neuronová síť) ne. Když instituce zamítne
+  klientovi službu na základě skóringu, musí umět vysvětlit, odkud se vzala každá vstupní
+  hodnota. Co neobhájíš před regulátorem, do provozu nepatří.
 
 ## Železná pravidla
 
@@ -152,19 +154,40 @@ ne dosazená všem bez rozdílu. Ověř to: po imputaci nesmí mít 100 % zázna
 
 ## 5. Statistická a modelová imputace
 
-Medián/modus a modely (kNN, rozhodovací strom) jsou legitimní pro analytickou vrstvu:
-scoring, segmentace, trénink modelů. **Nikdy do provozní tabulky** a nikdy bez příznaku.
+### Nejdřív mechanismus, pak metoda
 
-Před rozhodnutím zmapuj **strukturu chybějících hodnot** — jestli chybí náhodně, nebo
-systematicky (celá třída entit, jedno období, jeden kanál). Systematická díra se neimputuje
-statistikou; to je nález o procesu, ne chybějící hodnota. Vizualizace matice chybějících
-hodnot (`missingno`) tenhle rozdíl ukáže na první pohled.
+Než sáhneš po statistice, urči **mechanismus výskytu chybějících hodnot**. Metodu vybírá on,
+ne zvyk:
+
+| Mechanismus | Co znamená | Důsledek |
+|---|---|---|
+| **MCAR** | chybí se stejnou pravděpodobností všude, nezávisle na čemkoli | statistická imputace je obhajitelná |
+| **MAR** | pravděpodobnost chybění jde predikovat z ostatních proměnných | podmíněné metody (Buckova) dávají konzistentní odhad |
+| **MNAR** | chybění závisí na hodnotě samotné (selektivní vyplňování) | statisticky neimputovat — je to nález o procesu |
+| **MBND** | hodnota z podstaty existovat nemůže (počet těhotenství u muže) | neimputovat vůbec, opravit univerzum nebo model |
+
+MCAR se **testuje, neodhaduje**: Littleův MCAR test, případně t-testy mezi skupinou s hodnotou
+a bez ní. MAR proti MNAR bez dodatečné informace matematicky rozlišit nejde — a to je samo
+o sobě důvod k opatrnosti.
+
+Matice chybějících hodnot (`missingno`) je levný první pohled: systematická díra přes celou
+třídu entit, jedno období nebo jeden kanál je na ní vidět hned.
+
+### Dvě pasti
+
+- **Deformace rozdělení.** Nahrazení chybějících hodnot jedinou konstantou (průměr, medián)
+  vyrobí v histogramu nepřirozený pík uprostřed — v kurzu 4IZ562 *Čechové na Řípu*. Rozptyl
+  klesne, korelace se rozjedou a závěry z takových dat neplatí, i když tabulka vypadá úplně.
+- **Imputační paradox.** Model natrénovaný nad daty doplněnými explicitním modelem vykazuje
+  *lepší* metriky (nižší MAE) než model nad původními úplnými daty. Není lepší — imputace do
+  dat vnesla umělou multikolinearitu a přizpůsobila je. **Zlepšení metriky po imputaci ber
+  jako varování, ne jako úspěch.**
 
 ## Co neimputovat nikdy
 
 | Případ | Proč |
 |---|---|
-| identifikátor osoby nebo subjektu | vymyšlený identifikátor je horší než chybějící; blokuje ověřování a compliance |
+| identifikátor osoby nebo subjektu | vymyšlený identifikátor je horší než chybějící; blokuje ověřování a compliance, u osobních údajů navíc naráží na GDPR |
 | hodnota odvozená z nevalidního zdroje | přenáší chybu dál a maskuje ji |
 | 100% prázdný sloupec | není z čeho odvozovat; rozhodni mezi „doplnit z registru" a „odstranit sloupec" |
 | chybějící vazba (sirotek) | přiřazení k náhodnému rodiči je fabrikace; buď dohledat, nebo smazat |
