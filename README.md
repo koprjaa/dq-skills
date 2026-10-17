@@ -1,13 +1,12 @@
 # dq-skills
 
-Ten Claude Code skills that audit and clean data quality in any SQL database, from profiling and quality metrics to the audit report, standardization, imputation, deduplication and defect prevention.
+Claude Code skills for auditing and cleaning data quality in SQL databases.
 
 ![claude-code](https://img.shields.io/badge/Claude%20Code-skills-D97757?style=flat-square)
 ![license](https://img.shields.io/badge/license-MIT-A31F34?style=flat-square)
-![status](https://img.shields.io/badge/status-active-22863A?style=flat-square)
 [![ci](https://github.com/koprjaa/dq-skills/actions/workflows/ci.yml/badge.svg)](https://github.com/koprjaa/dq-skills/actions/workflows/ci.yml)
 
-The method comes from the course 4IZ562 Data Quality Management at Prague University of Economics and Business, and from an audit of 23 insurance company tables with 64 findings, a cost of poor quality estimate, and the corrective actions that followed. Nothing in the skills is specific to insurance, and the same defect patterns turn up in an online shop or a public registry.
+Ten skills: profiling, quality metrics, the audit report, then parsing, standardization, address matching, imputation, deduplication and prevention. The method comes from the course 4IZ562 Data Quality Management at Prague University of Economics and Business and from an audit of 23 tables of an insurance company (64 findings).
 
 ## Pipeline
 
@@ -31,7 +30,7 @@ dq-parser > dq-standardizer > dq-address > dq-imputer > dq-deduplicator > dq-gua
 | `dq-deduplicator` | Match code, clusters, survivor selection, golden record, household. |
 | `dq-guard` | Data types, foreign key and check constraints, quality firewall, monitoring, data governance. |
 
-Run the steps in this order. Deduplicating before standardization leaves `MuDr` and `MUDr.` as two people, and constraints added before remediation fail on the existing data.
+Keep the order. Deduplicating before standardization treats `MuDr` and `MUDr.` as different values, and constraints added before remediation fail on existing data.
 
 ## Install
 
@@ -44,7 +43,7 @@ For one project only, copy into `.claude/skills/` inside that project.
 
 ## Use
 
-The skills activate from their description. Write what you want:
+Plain requests work:
 
 ```
 profile this database for me
@@ -53,27 +52,24 @@ write the audit report from what you found
 clean and deduplicate the client base
 ```
 
-You can also call one directly with `/dq-profiler` or `/dq-validator`.
-
-Start with `dq-pipeline` when you do not know which step comes first. It holds the pipeline map and the shared standard.
+Or call one directly, for example `/dq-profiler`. If you are not sure where to start, use `/dq-pipeline`.
 
 ## Databases
 
-The SQL in the catalogues targets MySQL. `dq-pipeline` holds a translation table for PostgreSQL, SQL Server, Oracle, SQLite, and DuckDB. The table covers regular expressions, metadata, hashes, conditional aggregates, and collation.
+The SQL is written for MySQL. `dq-pipeline` has a translation table for PostgreSQL, SQL Server, Oracle, SQLite and DuckDB.
 
-The domain validators for birth number, company identifier, postal code, address registry, and industry classification are Czech examples. The structure of each check stays the same. Replace the specific rule with the equivalent for your jurisdiction, using the mapping table in `dq-pipeline`.
+Validators for birth numbers, company IDs, postal codes, addresses and industry codes use Czech rules. `dq-pipeline` lists what to replace them with elsewhere.
 
 ## Principles
 
-- No claim about quality without a query and a number.
-- Every number needs its universe. "5,328 missing" alone means nothing.
-- Never overwrite the original column. Remediation writes to `_STD` columns.
-- A suspicion becomes a finding once a second, independent query confirms it.
-- Fixing the data without fixing the input control means the defect returns.
+- Every finding has a query and a number.
+- Every number has its base: "5,328 of 119,348 missing", not "5,328 missing".
+- Remediation writes to `_STD` columns and never overwrites the original.
+- Fix the input control as well as the data, or the defect comes back.
 
 ## Limits
 
-The skills contain documentation and SQL. They ship no runnable code. Example values such as names, addresses and registries are Czech because the source audit was Czech.
+The skills are documentation and SQL, with no runnable code. Example names, addresses and registries are Czech.
 
 ## Development
 
@@ -83,11 +79,11 @@ cargo clippy --all-targets -- -D warnings
 cargo test
 ```
 
-The tests check the shape of each skill file. The frontmatter has to parse, the name has to match the directory, and the description has to be long enough to match on and end with a keyword list. Every pipeline step has to appear in `dq-pipeline`. Claude Code skips a skill with broken frontmatter without an error, so without these tests a missing step shows up only when the pipeline runs past it.
+The tests check that every skill file has valid frontmatter, a name matching its directory and a description with keywords, and that every step is listed in `dq-pipeline`. Claude Code silently skips a skill with broken frontmatter.
 
 ## Related
 
-[da-skills](https://github.com/koprjaa/da-skills) designs or reviews the data architecture these checks run against. Its steps hand off to `dq-profiler`, `dq-deduplicator`, and `dq-guard`.
+[da-skills](https://github.com/koprjaa/da-skills) designs or reviews the data architecture and calls `dq-profiler`, `dq-deduplicator` and `dq-guard` at the matching steps.
 
 ## License
 
