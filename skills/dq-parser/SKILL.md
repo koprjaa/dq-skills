@@ -1,47 +1,48 @@
 ---
 name: dq-parser
-description: Parsing a atomizace dat — rozbití složených hodnot do dedikovaných sloupců (číslo popisné a orientační z ulice, obec vs. městská část, jméno a prostřední jméno, titul od jména), oprava prokládaných mezer a kódovacích chyb, extrakce vzorů regexem. První krok remediace, po auditu, před dq-standardizator. Použij, když jsou "čísla domů slitá v ulici", "složené hodnoty v jednom poli", "porušená atomicita", "je potřeba rozparsovat adresu nebo jméno". Keywords: parsing, atomizace, atomicita, rozdělení adresy, číslo popisné, regexp_substr, split, extrakce.
+description: Parsing and atomising data. Splits composite values into dedicated columns (house numbers out of the street, municipality vs. city district, first and middle name, title from name), fixes interleaved spaces and encoding errors, extracts patterns with regex. First remediation step, after the audit, before dq-standardizer. Use it when "house numbers are merged into the street", "composite values sit in one field", "atomicity is broken", "the address or name needs parsing". Keywords: parsing, atomisation, atomicity, address splitting, house number, regexp_substr, split, extraction.
 ---
 
-# Parser — atomizace
+# Parser: atomisation
 
-První krok remediace. **Nic nestandardizuj ani neunifikuj, dokud to není atomické.** Pole
-`ADDR_STREET` s hodnotou „Na Budíně 854" nenapojíš na registr, který zná ulici a číslo zvlášť.
+First remediation step. **Do not standardise or unify anything until it is atomic.** A field `ADDR_STREET`
+with the value "Na Budíně 854" cannot be linked to a registry that knows the street and the number
+separately.
 
-Porušená atomicita není kosmetika, je to **porušení první normální formy**: bez atomických
-hodnot nemá model spolehlivý identifikátor záznamu a jakékoli přibližné porovnávání
-a slučování s dalším zdrojem je nespolehlivé.
+Broken atomicity is not cosmetic, it is a **violation of first normal form**: without atomic values the
+model has no reliable record identifier, and any approximate matching and merging with another source is
+unreliable.
 
-Pipeline: audit → **dq-parser** → `dq-standardizator` → `dq-adresar` → `dq-imputator` → `dq-deduplikator`.
+Pipeline: audit → **dq-parser** → `dq-standardizer` → `dq-address` → `dq-imputer` → `dq-deduplicator`.
 
-## Pravidla
+## Rules
 
-- **Originál se nemaže.** Parsovaný výstup jde do nových sloupců (`_STD`, `_NUM1`, `_NUM2`).
-  Original je evidence pro before/after a záchranná síť, když parser šlápne vedle.
-- **Deterministicky, ne heuristikou.** Parser, který v 3 % případů uhodne špatně, vyrobí
-  tichá poškození. Když si pravidlem nejsi jistý, nech NULL a spočítej, kolik jich zbylo.
-  Platí pro strukturované pole se známým vzorem — adresa, jméno, datum. U volného textu,
-  kde vzor neexistuje, je statistické rozpoznávání entit (NER, spaCy) legitimní nástroj,
-  ale jeho výstup je odhad: patří k němu skóre jistoty a příznak, a do produkčního sloupce
-  nejde bez revize.
-- **Osekej nepřípustné znaky dřív, než začneš dělit.** Pro každý sémantický typ si drž tabulku
-  přípustných znaků (*chop table*) — u poštovního kódu číslice, u IBANu alfanumerika — a zbytek
-  odstraň. Úspěšnost rozkladu to zvedne víc než složitější regex.
-- **Změř míru rozparsování** — kolik řádků se povedlo rozložit. To je metrika do zprávy
-  a nezaměňuj ji s *match rate*: ten se měří až při napojení na registr (`dq-adresar`).
-- Parsuj **před** čímkoli dalším: standardizace, imputace i deduplikace stojí na atomických polích.
+- **The original is never deleted.** Parsed output goes into new columns (`_STD`, `_NUM1`, `_NUM2`). The
+  original is evidence for before/after and a safety net when the parser gets it wrong.
+- **Deterministic, not heuristic.** A parser that guesses wrong in 3 % of cases produces silent damage. When
+  you are not sure of a rule, leave NULL and count how many remained. This holds for structured fields with a
+  known pattern: address, name, date. For free text, where no pattern exists, statistical entity recognition
+  (NER, spaCy) is a legitimate tool, but its output is an estimate: it comes with a confidence score and a
+  flag, and does not go into a production column without review.
+- **Chop disallowed characters before you split.** For every semantic type keep a table of allowed characters
+  (a *chop table*): digits for a postcode, alphanumerics for an IBAN; strip the rest. It raises the success of
+  splitting more than a more complex regex.
+- **Measure the parse rate**: how many rows were split successfully. That is a metric for the report; do not
+  confuse it with the *match rate*, which is measured only when linking to a registry (`dq-address`).
+- Parse **before** anything else: standardisation, imputation and deduplication all stand on atomic fields.
 
-Regex řeší jeden vzor. Průmyslové parsery jdou na to přes **gramatiku** sémantického typu
-uloženou ve znalostní bázi (QKB): popíše očekávanou stavbu adresy nebo jména a jednotlivým
-kombinacím tokenů přiřadí pravděpodobnost výskytu. Když píšeš pátý regex na tutéž entitu,
-chybí ti gramatika, ne další regex.
+A regex solves one pattern. Industrial parsers use a **grammar** of the semantic type stored in a knowledge
+base (QKB): it describes the expected structure of an address or name and assigns a probability of occurrence
+to each combination of tokens. When you are writing the fifth regex for the same entity, you are missing a
+grammar, not another regex.
 
-## Adresa
+## Address
 
-Nejčastější defekt: dedikované sloupce pro čísla domů jsou 100 % prázdné a číslo je slité do
-názvu ulice. Ve zdroji vypadá jako `Na Budíně 854`, `Nádražní 1211/25a`, `Bezručova 12/3`.
+The most common defect: the dedicated columns for house numbers are 100 % empty and the number is merged into
+the street name. In the source it looks like `Na Budíně 854`, `Nádražní 1211/25a`, `Bezručova 12/3`.
 
-Rozklad na tři složky — název ulice, číslo popisné, číslo orientační (s případným písmenem):
+Split into three parts: street name, descriptive number (číslo popisné), orientation number (číslo
+orientační, possibly with a letter):
 
 ```sql
 -- MySQL 8: REGEXP_SUBSTR / REGEXP_REPLACE
@@ -51,30 +52,32 @@ UPDATE PARTY_ADDRESS SET
   ADDR_STREET_STD = TRIM(REGEXP_REPLACE(ADDR_STREET, '[0-9]+(/[0-9]+[a-zA-Z]?)?[[:space:]]*$', ''));
 ```
 
-Python ekvivalent, když jde o pandas pipeline:
+Python equivalent for a pandas pipeline:
 
 ```python
-num  = raw.str.extract(r'(\d+)(?:/\d+\w?)?\s*$', expand=False)      # číslo popisné
-street = raw.str.replace(r'\d+(/\d+\w?)?\s*$', '', regex=True).str.strip()
+num = raw.str.extract(r"(\d+)(?:/\d+\w?)?\s*$", expand=False)  # descriptive number
+street = raw.str.replace(r"\d+(/\d+\w?)?\s*$", "", regex=True).str.strip()
 ```
 
-Pozor na pořadí čísel: v ČR se zapisuje `popisné/orientační`, ale konvence není vždy dodržená.
-Když parser najde jen jedno číslo, ulož ho jako popisné a orientační nech NULL — nehádej.
+Watch the order of the numbers: in the Czech Republic the form is `descriptive/orientation`, but the
+convention is not always followed. When the parser finds only one number, store it as the descriptive number
+and leave the orientation number NULL; do not guess.
 
-### Složená hodnota v poli obce
+### Composite value in the municipality field
 
-`Praha 5 - Smíchov`, `České Budějovice - České Budějovice 5` — operátor napsal do jednoho pole
-celou adresní hierarchii (obec + městská část + číslo obvodu). Znemožňuje párování na registr.
+`Praha 5 - Smíchov`, `České Budějovice - České Budějovice 5`: the operator typed the whole address hierarchy
+(municipality + city district + district number) into one field. It makes matching against the registry
+impossible.
 
 ```sql
--- první segment před pomlčkou = obec, zbytek = městská část
+-- the first segment before the dash = municipality, the rest = city district
 SELECT ADDR_CITY,
-  TRIM(SUBSTRING_INDEX(ADDR_CITY, '-', 1))                      obec,
-  NULLIF(TRIM(SUBSTRING(ADDR_CITY, LOCATE('-',ADDR_CITY)+1)),'') mcast
+  TRIM(SUBSTRING_INDEX(ADDR_CITY, '-', 1))                      municipality,
+  NULLIF(TRIM(SUBSTRING(ADDR_CITY, LOCATE('-',ADDR_CITY)+1)),'') district
 FROM PARTY_ADDRESS WHERE ADDR_CITY LIKE '%-%';
 ```
 
-Detekce kandidátů, než začneš parsovat:
+Detect candidates before parsing:
 
 ```sql
 SELECT ADDR_CITY, COUNT(*) cnt FROM PARTY_ADDRESS
@@ -82,23 +85,22 @@ WHERE ADDR_CITY REGEXP '[0-9]' OR ADDR_CITY LIKE '%-%' OR LENGTH(ADDR_CITY) > 50
 GROUP BY 1 ORDER BY cnt DESC LIMIT 20;
 ```
 
-Pozor: pomlčka v názvu obce je někdy legitimní (`Frýdek-Místek`, `Brandýs nad Labem-Stará
-Boleslav`). Proto se rozklad ověřuje proti registru obcí, ne slepě — a když po rozkladu obec
-v registru není, vrať původní hodnotu.
+Beware: a dash in a municipality name is sometimes legitimate (`Frýdek-Místek`, `Brandýs nad Labem-Stará
+Boleslav`). So the split is verified against the registry of municipalities, not blindly; when the
+municipality is not in the registry after the split, restore the original value.
 
-### P.O. Box a jiné mimo-rozsahové formy
+### P.O. boxes and other out-of-scope forms
 
-P.O. Box, poštovní přihrádka, „na doručovací adrese firmy" — formálně platné adresy, které
-registr budov nezná. Neparsuj je násilím, označ je vlastním příznakem a vyřaď z metriky
-match rate (jinak vykážeš jako chybu něco, co chyba není).
+A P.O. box, a post office box, "at the company's delivery address": formally valid addresses the building
+registry does not know. Do not force-parse them; mark them with their own flag and exclude them from the
+match rate metric (otherwise you report as an error something that is not one).
 
-## Jméno
+## Name
 
-### Prokládané mezery
+### Interleaved spaces
 
-`D A V I D`, `Ž A N N A` — každé písmeno oddělené mezerou. Slepit lze deterministicky, když
-jsou **všechny** tokeny jednopísmenné, nebo když je jednopísmenných většina (zbytek je typicky
-pomlčka nebo iniciála):
+`D A V I D`, `Ž A N N A`: every letter separated by a space. They can be joined deterministically when **all**
+tokens are single letters, or when most of them are (the rest is typically a hyphen or an initial):
 
 ```python
 toks = s.split()
@@ -108,12 +110,12 @@ elif len(toks) > 1 and sum(len(t) == 1 for t in toks) >= max(2, len(toks) - 1):
     s = "".join(toks)
 ```
 
-Nikdy neslepuj tokeny obecně — `Anna Marie` je dvě jména, ne `AnnaMarie`.
+Never join tokens in general: `Anna Marie` is two names, not `AnnaMarie`.
 
-### Vícesložkové jméno
+### Multi-part name
 
-Křestní + prostřední jméno v jednom poli. Rozděl podle mezery a druhý token ulož zvlášť;
-jednopísmenné tokeny (iniciály) zahazuj, jinak vyrobíš nesmyslné prostřední jméno:
+First + middle name in one field. Split on the space and store the second token separately; drop
+single-letter tokens (initials), otherwise you produce a meaningless middle name:
 
 ```sql
 UPDATE PART_PARTY
@@ -123,51 +125,50 @@ SET PARTY_FNAME_STD = <proper>(SUBSTRING_INDEX(PARTY_FNAME,' ',1)),
 WHERE PARTY_TYPE='P' AND LENGTH(SUBSTRING_INDEX(PARTY_FNAME,' ',2)) > 1;
 ```
 
-### Titul zapsaný v poli jména
+### Title written in the name field
 
-`Ing. Jan Novák` v `PARTY_NAME`. Detekuj podle shody prvního tokenu se slovníkem titulů,
-ne podle tečky — `J. Novák` je iniciála, ne titul.
+`Ing. Jan Novák` in `PARTY_NAME`. Detect it by matching the first token against a dictionary of titles, not by
+the dot: `J. Novák` is an initial, not a title.
 
-Slovníkem je číselník titulů (`REF_*_TITBEF` pro tituly před jménem, `TITAFT` za ním) a shodu
-dělej fuzzy, protože v datech vedle sebe stojí `MuDr`, `MUDr.` i `Mudr`. Parser titul jen
-oddělí; převod na kanonický tvar je práce pro `dq-standardizator`.
+The dictionary is the code list of titles (`REF_*_TITBEF` for titles before the name, `TITAFT` after it), and
+the match is fuzzy, because `MuDr`, `MUDr.` and `Mudr` sit side by side in the data. The parser only separates
+the title; converting it to the canonical form is work for `dq-standardizer`.
 
-### Kódovací chyby
+### Encoding errors
 
-Dvě různé věci, dvě různá řešení:
+Two different things, two different solutions:
 
-| Chyba | Příklad | Řešení |
+| Error | Example | Solution |
 |---|---|---|
-| systematická záměna znaku | `ĄUDOVÍT` (má být `ĽUDOVÍT`) | vzor je jednoznačný (`Ą` na začátku slova je vždy chybný přepis), ale oprava patří do `dq-standardizator` jako registrované pravidlo. V parseru jen tehdy, když ten znak brání samotnému rozkladu |
-| ztracené písmeno | `BE0ŠOVÁ` (má být `BENEŠOVÁ`) | **neopravuj v parseru.** Označ příznakem `_CORRUPT` a nech obnovu na `dq-standardizator` (registr jmen) nebo `dq-deduplikator` (čistý dvojník v klastru) |
+| systematic character swap | `ĄUDOVÍT` (should be `ĽUDOVÍT`) | the pattern is unambiguous (`Ą` at the start of a word is always a bad transcription), but the fix belongs in `dq-standardizer` as a registered rule. In the parser only when that character blocks the split itself |
+| lost letter | `BE0ŠOVÁ` (should be `BENEŠOVÁ`) | **do not fix it in the parser.** Mark it with a `_CORRUPT` flag and leave the reconstruction to `dq-standardizer` (name registry) or `dq-deduplicator` (a clean twin in the cluster) |
 
 ```python
-s = re.sub(r"(^|(?<=\s))Ą", "Ľ", s)          # jednoznačné pravidlo — ale patří do standardizace
-corrupt = bool(re.search(r"[0-9]", s))       # číslice ve jménu = poškozeno, řeší se jinde
+s = re.sub(r"(^|(?<=\s))Ą", "Ľ", s)  # an unambiguous rule, but it belongs in standardisation
+corrupt = bool(re.search(r"[0-9]", s))  # a digit in a name = corrupted, handled elsewhere
 ```
 
-**Parser dělí, neopravuje.** I deterministická oprava patří do standardizace jako zaregistrované
-pravidlo — jinak po ní nezůstane auditní stopa a nikdo nedohledá, čím se hodnota změnila.
-Jediná výjimka je znak, který brání samotnému rozkladu. Rekonstrukce chybějícího písmene je
-navíc odhad a patří tam, kde je proti čemu ho ověřit.
+**The parser splits, it does not fix.** Even a deterministic fix belongs in standardisation as a registered
+rule; otherwise no audit trail remains and nobody can trace what changed the value. The only exception is a
+character that blocks the split itself. Reconstructing a missing letter is also an estimate and belongs where
+there is something to verify it against.
 
-## Datum uložené jako text
+## Date stored as text
 
-Než parsuješ, ověř formát a den/měsíc:
+Before parsing, check the format and day/month:
 
 ```sql
-SELECT SUBSTRING(<col>,1,2) prvni, SUBSTRING(<col>,4,2) druhy, COUNT(*)
+SELECT SUBSTRING(<col>,1,2) first, SUBSTRING(<col>,4,2) second, COUNT(*)
 FROM <t> GROUP BY 1,2 ORDER BY 3 DESC LIMIT 20;
 ```
 
-Když první pozice nikdy nepřekročí 12 a druhá ano, je pořadí `MM.DD`; když obojí přesahuje 12,
-je formát smíšený a je nutné rozhodnout per řádek podle druhého zdroje. Slepý `STR_TO_DATE`
-tichý swap nezachytí a rozseje ho po celé tabulce.
+When the first position never exceeds 12 and the second does, the order is `MM.DD`; when both exceed 12, the
+format is mixed and has to be decided per row from a second source. A blind `STR_TO_DATE` will not catch the
+silent swap and spreads it across the whole table.
 
-## Výstup parseru
+## Output of the parser
 
-- Nové `_STD` sloupce s atomickými hodnotami, originály nedotčené.
-- Míra rozparsování na každou složku (`% řádků s neprázdným výsledkem`).
-- **Chybová tabulka** řádků, které parser nerozložil, s důvodem u každého — auditní stopa
-  o tom, proč záznam neprošel. Vstup pro ruční review nebo pro rozhodnutí „tohle je mimo
-  rozsah".
+- New `_STD` columns with atomic values, originals untouched.
+- The parse rate for each part (`% of rows with a non-empty result`).
+- **An error table** of rows the parser did not split, with the reason for each: the audit trail of why a
+  record did not pass. Input for manual review or for the decision "this is out of scope".

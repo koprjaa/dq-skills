@@ -1,153 +1,154 @@
 ---
 name: dq-validator
-description: Validace dat a měření metrik kvality v libovolné databázi — kontroly po šesti dimenzích (úplnost, syntaktická a sémantická správnost, vnitřní a vnější konzistentnost, unikátnost) nad provozními tabulkami, číselníky i referenčními registry, checksum validátory identifikátorů (rodné číslo, IČO, VAT, SSN), regex pravidla pro e-mail, telefon a poštovní kód, zápis skóre do metadatového repozitáře. Druhý krok DQ pipeline, po dq-profiler, před dq-auditor. Použij vždy, když se mají "spustit kontroly nad daty", "změřit kvalitu dat", "zvalidovat atributy", "spočítat DQ skóre", "najít nevalidní nebo nekonzistentní záznamy", "ověřit referenční integritu" — i když uživatel neřekne slovo validace. Keywords: validace, data validation, kontroly, DQ metriky, regex validace, checksum, mod 11, referenční integrita, sirotci, DQM_MDR, úplnost, konzistentnost, duplicity.
+description: Data validation and measurement of quality metrics in any database. Checks across six dimensions (completeness, syntactic and semantic correctness, internal and external consistency, uniqueness) over operational tables, code lists and reference registries, checksum validators for identifiers (national ID, company ID, VAT, SSN), regex rules for e-mail, phone and postal code, and writing scores into a metadata repository. Second step of the DQ pipeline, after dq-profiler, before dq-auditor. Use it whenever someone wants to "run checks on the data", "measure data quality", "validate attributes", "compute a DQ score", "find invalid or inconsistent records", "verify referential integrity", even if the user never says validation. Keywords: validation, data validation, checks, DQ metrics, regex validation, checksum, mod 11, referential integrity, orphans, DQM_MDR, completeness, consistency, duplicates.
 ---
 
-# Validator — kontroly a měření
+# Validator: checks and measurement
 
-Profiler řekl, co v datech je. Validator to **spočítá**. Každá kontrola vrací číslo, univerzum
-a příslušnost k dimenzi. Bez toho to není měření, ale dojem.
+The profiler said what is in the data. The validator **counts** it. Every check returns a number, a
+universe and the dimension it belongs to. Without that it is an impression, not a measurement.
 
-Pipeline: `dq-profiler` → **dq-validator** → `dq-auditor`. Standard v `dq-pipeline`.
-Kompletní SQL katalog: `references/checks-sql.md`.
+Pipeline: `dq-profiler` → **dq-validator** → `dq-auditor`. Standard in `dq-pipeline`.
+Full SQL catalogue: `references/checks-sql.md`.
 
-## Pravidla měření
+## Measurement rules
 
-- **Univerzum ke každému číslu.** `SUM(...)` bez `COUNT(*)` a bez filtru na typ entity je
-  nepoužitelné. Formát: absolutní počet + procento + z čeho.
-- **Anti-join, ne `NOT IN`.** `NOT IN (SELECT ...)` s jediným NULL vrátí prázdnou množinu a
-  kontrola tiše projde. Vždy `LEFT JOIN ... WHERE x.KEY IS NULL`.
-- **Collation-safe JOIN.** `CONVERT(a.COL USING utf8mb4) = CONVERT(l.CODE USING utf8mb4)`,
-  jinak Error 1267 nebo tiché nesparování.
-- **Zafixuj snapshot.** Metriky se počítají k datu, ne k `CURDATE()`, jinak nejsou reprodukovatelné.
-- **Nula je výsledek.** „0 sirotků" je pozitivní nález a patří do zprávy. Ale připoj, jestli
-  je vynucená (FK existuje) nebo náhodná (FK chybí) — bez FK je to stav, ne záruka.
-- **Vzorek ke každému nálezu.** Ke každému nenulovému počtu vytáhni 10–20 konkrétních řádků.
-  Interpretaci dělá vzorek, ne agregát. Je to pracovní default pro pochopení příčiny, **ne
-  statisticky reprezentativní vzorek** — když má vzorek nést závěr o celku, použij metodiku
-  vzorkování (discovery sampling podle ISACA) a napiš do zprávy jakou.
+- **A universe for every number.** `SUM(...)` without `COUNT(*)` and without a filter on entity type is
+  useless. Format: absolute count + percentage + out of what.
+- **Anti-join, not `NOT IN`.** `NOT IN (SELECT ...)` with a single NULL returns an empty set and the check
+  silently passes. Always `LEFT JOIN ... WHERE x.KEY IS NULL`.
+- **Collation-safe JOIN.** `CONVERT(a.COL USING utf8mb4) = CONVERT(l.CODE USING utf8mb4)`, otherwise Error
+  1267 or a silent non-match.
+- **Fix the snapshot.** Metrics are computed as of a date, not as of `CURDATE()`, otherwise they are not
+  reproducible.
+- **Zero is a result.** "0 orphans" is a positive finding and belongs in the report. But add whether it is
+  enforced (an FK exists) or accidental (no FK); without an FK it is a state, not a guarantee.
+- **A sample for every finding.** For every non-zero count, pull 10–20 concrete rows. The sample does the
+  interpretation, not the aggregate. It is a working default for understanding the cause, **not a
+  statistically representative sample**; when the sample has to support a conclusion about the whole, use a
+  sampling methodology (discovery sampling per ISACA) and state which in the report.
 
-## Postup podle typu tabulky
+## Procedure by table type
 
-### Provozní tabulka — všech šest dimenzí
+### Operational table: all six dimensions
 
-1. **Úplnost** — po sloupcích, s filtrem univerza, rozliš NULL / `''` / zástupnou hodnotu.
-2. **Syntaktická správnost** — maska a nic víc: regex, délka, whitespace, case; jen na
-   neprázdných hodnotách.
-3. **Sémantická správnost** — anti-join na číselník, rozsahy, sentinel hodnoty, **kontrolní
-   součet (mod 11)**, hodnoty sémanticky patřící jinam (IČO v poli sektoru, celá adresní
-   hierarchie v poli obce). Checksum patří sem, ne k syntaxi: neříká, jak hodnota vypadá,
-   ale jestli může existovat.
-4. **Vnitřní konzistentnost** — odvozený vs. zdrojový atribut, vzájemně vylučující se atributy,
-   párové atributy, časové rozsahy.
-5. **Vnější konzistentnost** — sirotci, napojení na registr (measure match rate).
-6. **Unikátnost** — přirozený klíč, redundance celého záznamu, sdílené hodnoty přes N entit.
+1. **Completeness**: per column, with the universe filter; tell NULL / `''` / a placeholder apart.
+2. **Syntactic correctness**: the mask and nothing more: regex, length, whitespace, case; only on non-empty
+   values.
+3. **Semantic correctness**: anti-join to the code list, ranges, sentinel values, **checksum (mod 11)**,
+   values that semantically belong elsewhere (a company ID in the sector field, the whole address hierarchy
+   in the municipality field). The checksum belongs here, not under syntax: it does not say what the value
+   looks like, it says whether it can exist.
+4. **Internal consistency**: derived vs. source attribute, mutually exclusive attributes, paired
+   attributes, time ranges.
+5. **External consistency**: orphans, link to a registry (measure the match rate).
+6. **Uniqueness**: natural key, redundancy of the whole record, shared values across N entities.
 
-Pořadí je pracovní posloupnost (levné kontroly dřív než JOINy na registr), ne norma — závazné
-pořadí měření nikdo nepředepisuje. Unikátnost se standardně měří na úrovni celých záznamů přes
-porovnávací kódy; rozpad na tři řezy výše je moje rozšíření, ne definice.
+The order is a working sequence (cheap checks before JOINs to a registry), not a norm; nobody prescribes a
+binding order of measurement. Uniqueness is normally measured at the level of whole records through match
+codes; the split into three cuts above is my extension, not a definition.
 
-### Číselník (LOV) — vlastní kvalita + jak se používá
+### Code list (LOV): its own quality + how it is used
 
-Číselník není součástí univerza, ale **jeho defekty zkreslují měření univerza**, takže se
-audituje taky. Šablona (pokryje 90 % nálezů):
+A code list is not part of the universe, but **its defects distort the measurement of the universe**, so it
+is audited too. Template (covers 90 % of findings):
 
 ```sql
--- kvalita samotného číselníku
+-- quality of the code list itself
 SELECT COUNT(*) total,
   SUM(CODE IS NULL OR TRIM(CODE)='')                       code_blank,
   SUM(VALUE IS NULL OR TRIM(VALUE)='')                     value_blank,
-  SUM(DESCR IS NULL OR TRIM(DESCR) IN ('','NA'))           descr_prazdny,
+  SUM(DESCR IS NULL OR TRIM(DESCR) IN ('','NA'))           descr_empty,
   SUM(CODE <> TRIM(CODE))                                  code_whitespace,
   SUM(BINARY TRIM(CODE) <> BINARY UPPER(TRIM(CODE)))       code_not_upper,
-  SUM(DEL_FLAG IS NULL OR TRIM(DEL_FLAG) NOT IN ('Y','N')) del_flag_mimo,
-  SUM(VALID_FROM > VALID_TO)                               rozsah_obraceny,
+  SUM(DEL_FLAG IS NULL OR TRIM(DEL_FLAG) NOT IN ('Y','N')) del_flag_invalid,
+  SUM(VALID_FROM > VALID_TO)                               range_reversed,
   COUNT(DISTINCT TRIM(VALUE))                              distinct_value
 FROM <lov>;
 
--- využití číselníku provozem (obě strany!)
-SELECT l.CODE, l.VALUE, COUNT(a.<col>) pouziti
-FROM <lov> l LEFT JOIN <provoz> a
+-- use of the code list by operations (both sides!)
+SELECT l.CODE, l.VALUE, COUNT(a.<col>) uses
+FROM <lov> l LEFT JOIN <operational> a
   ON CONVERT(a.<col> USING utf8mb4) = CONVERT(l.CODE USING utf8mb4)
-GROUP BY 1,2 ORDER BY pouziti;                    -- 0 = mrtvá položka číselníku
+GROUP BY 1,2 ORDER BY uses;                        -- 0 = dead code list entry
 
-SELECT a.<col>, COUNT(*) cnt                       -- hodnoty mimo číselník
-FROM <provoz> a LEFT JOIN <lov> l
+SELECT a.<col>, COUNT(*) cnt                       -- values outside the code list
+FROM <operational> a LEFT JOIN <lov> l
   ON CONVERT(a.<col> USING utf8mb4) = CONVERT(l.CODE USING utf8mb4)
 WHERE a.<col> IS NOT NULL AND l.CODE IS NULL GROUP BY 1 ORDER BY cnt DESC;
 ```
 
-Co u číselníků kontrolovat vždy:
+What to always check on code lists:
 
-| Kontrola | Proč | Reálný nález |
+| Check | Why | Real finding |
 |---|---|---|
-| kódy použité v provozu, ale chybějící v číselníku | root cause = chybí FK | typ adresy `P` u 382 210 adres (40 %) mimo číselník; kódy frekvence `3` a `5` u 91 693 smluv |
-| kódy v číselníku bez použití | mrtvá položka nebo důsledek jiného defektu | 239 z 240 kódů zemí nepoužito (kvůli plošnému `CZE`); kategorie produktu 7 bez produktu i smlouvy |
-| duplicitní `VALUE` pod různými `CODE` | rozdvojení statistik | `Dipl.tech.` pod CODE 19 i 20; `M.S.` a `MSc` se stejným popisem |
-| prázdný popisný sloupec | datový slovník fakticky neexistuje | `DESC`/`DESCR` NULL nebo `'NA'` u 7 z 9 číselníků |
-| nekonzistentní název popisného sloupce | generické ETL musí ošetřit obě varianty | 4× `DESC` vs 5× `DESCR` pro identický atribut |
-| nekonzistentní `DEL_FLAG` | tři implementace téhož příznaku | `char(1)` Y/N vs `tinyint` 0/1 vs `char(4)` |
-| nekonzistentní sentinel `VALID_TO` | různé „nekonečno" ztěžuje filtr platnosti | `2999-01-01` vs `2999-12-31` vs NULL |
-| zastaralé položky bez deaktivace | číselník neodráží realitu | zaniklé státy `ANT`, `SCG` aktivní; přejmenované `SWZ`, `MKD`, `LBY` se starým názvem |
-| překlepy v hodnotách | propagují se do reportů a UI | `Corespondence`, `HERZEGOWINA`, `Bacherol` |
-| oříznuté hodnoty | `varchar(n)` nestačí na plný název | 9 ze 43 kódů ESA95 s oříznutým `VALUE` |
-| zastaralost celé klasifikace | v rozporu s regulací | ESA95 (od 2014 ESA2010), OKEČ (od 2008 CZ-NACE), UIR-ADR (od 2012 RÚIAN) |
+| codes used in operations but missing from the code list | root cause = missing FK | address type `P` on 382,210 addresses (40 %) outside the code list; frequency codes `3` and `5` on 91,693 contracts |
+| codes in the code list with no use | dead entry or the consequence of another defect | 239 of 240 country codes unused (because of the blanket `CZE`); product category 7 with no product or contract |
+| duplicate `VALUE` under different `CODE`s | split statistics | `Dipl.tech.` under CODE 19 and 20; `M.S.` and `MSc` with the same description |
+| empty description column | the data dictionary effectively does not exist | `DESC`/`DESCR` NULL or `'NA'` in 7 of 9 code lists |
+| inconsistent name of the description column | generic ETL must handle both variants | 4× `DESC` vs 5× `DESCR` for an identical attribute |
+| inconsistent `DEL_FLAG` | three implementations of one flag | `char(1)` Y/N vs `tinyint` 0/1 vs `char(4)` |
+| inconsistent sentinel `VALID_TO` | different "infinities" complicate the validity filter | `2999-01-01` vs `2999-12-31` vs NULL |
+| obsolete entries not deactivated | the code list does not reflect reality | dissolved states `ANT`, `SCG` active; renamed `SWZ`, `MKD`, `LBY` with the old name |
+| typos in values | propagate into reports and UI | `Corespondence`, `HERZEGOWINA`, `Bacherol` |
+| truncated values | `varchar(n)` too short for the full name | 9 of 43 ESA95 codes with a truncated `VALUE` |
+| an obsolete classification as a whole | at odds with regulation | ESA95 (ESA2010 since 2014), OKEČ (CZ-NACE since 2008), UIR-ADR (RÚIAN since 2012) |
 
-### Referenční tabulka (REF) — použitelnost jako měřítko
+### Reference table (REF): fitness as a yardstick
 
-U referenčního registru se neptej „jsou v něm chyby", ale **„unese vůbec roli standardu?"**:
+For a reference registry do not ask "does it have errors", ask **"can it carry the role of a standard at
+all?"**:
 
 ```sql
--- pokrytí: kolik provozních hodnot registr vůbec zná
-SELECT COUNT(*) provoz_total,
-       SUM(r.KEY IS NOT NULL) v_registru,
-       ROUND(100.0*SUM(r.KEY IS NOT NULL)/COUNT(*),2) pokryti_pct
-FROM <provoz> p LEFT JOIN <ref> r ON <join podmínka>;
+-- coverage: how many operational values the registry knows at all
+SELECT COUNT(*) operational_total,
+       SUM(r.KEY IS NOT NULL) in_registry,
+       ROUND(100.0*SUM(r.KEY IS NOT NULL)/COUNT(*),2) coverage_pct
+FROM <operational> p LEFT JOIN <ref> r ON <join condition>;
 ```
 
-Registr má i **časovou platnost**. U registru osob a firem neověřuj jen to, že identifikátor
-dnes existuje, ale že subjekt byl aktivní **k datu transakce** — datum vzniku a zániku jsou
-v registru právě proto. Smlouva uzavřená se subjektem, který zanikl o dva roky dřív, je nález,
-ne překlep.
+A registry also has **time validity**. For a person or company registry do not only check that the
+identifier exists today, but that the subject was active **as of the transaction date**; that is exactly why
+the registry holds dates of creation and dissolution. A contract signed with a subject that ceased to exist
+two years earlier is a finding, not a typo.
 
-Reálné nálezy: registr IČO měl 1 000 řádků pro 119 348 firemních klientů (pokrytí < 1 %,
-98,31 % klientů mimo registr) — nepoužitelné torzo, validace neproveditelná. Adresní registr
-měl 2,6 M řádků, ale 88,7 % bez souřadnic a 292 878 s invertovaným znaménkem; sesterská
-tabulka postrádala 49 670 platných adres (1,91 %), měla 21 145 řádků s číslicí v poli ulice
-(porušení atomičnosti v samotném referenčním zdroji) a **z principu neobsahovala P.O. Boxy**.
+Real findings: the company ID registry had 1,000 rows for 119,348 business clients (coverage < 1 %, 98.31 %
+of clients outside the registry), an unusable stub, validation not possible. The address registry had
+2.6 M rows, but 88.7 % without coordinates and 292,878 with an inverted sign; a sister table was missing
+49,670 valid addresses (1.91 %), had 21,145 rows with a digit in the street field (an atomicity violation in
+the reference source itself) and **by design contained no P.O. boxes**.
 
-Poslední bod je důležitý žánr nálezu: **rozsahová mezera zdroje**. Klientská adresa s poštovní
-přihrádkou je formálně platná, ale vůči tomuto registru bude vždy nevalidní. To není defekt
-klientských dat — a musí to být ve zprávě napsané, jinak se 100 % těchto řádků vykáže jako chyba.
+The last point is an important kind of finding: **a scope gap of the source**. A client address with a post
+office box is formally valid, but against this registry it will always be invalid. That is not a defect of
+the client data, and the report has to say so, otherwise 100 % of those rows are reported as errors.
 
-## Doménové validátory (příklad: ČR)
+## Domain validators (example: Czech Republic)
 
-Následující pravidla jsou vázaná na českou jurisdikci. **Struktura kontroly je univerzální**
-(formát → checksum → křížová konzistence s odvozenými atributy — první krok měří syntaktickou
-správnost, druhý sémantickou, třetí vnitřní konzistentnost), konkrétní váhy a délky nahraď
-ekvivalentem cílové země — mapovací tabulka je v `dq-pipeline`, sekce Přenositelnost.
+The following rules are tied to the Czech jurisdiction. **The structure of the check is universal** (format
+→ checksum → cross-consistency with derived attributes; the first step measures syntactic correctness, the
+second semantic correctness, the third internal consistency); replace the specific weights and lengths with
+the equivalent of the target country. The mapping table is in `dq-pipeline`, Portability section.
 
-| Atribut | Pravidlo |
+| Attribute | Rule |
 |---|---|
-| **Rodné číslo** | 9 nebo 10 číslic po odstranění `/`. 10místné validní když `RC % 11 = 0`, nebo (historická výjimka) `prvních9 % 11 = 10` a poslední číslice `0`. 9místné (do 1953) kontrolní číslici nemá — validuj jen strukturu. Měsíc: `+50` žena, `+20`/`+70` přidělovací navýšení (od 2004). |
-| **IČO** | 8 číslic (doplň vedoucí nuly). Mod 11: váhy 8..2 na prvních 7 číslic, `zbytek = součet % 11`, kontrolní číslice `(11 - zbytek) % 10`. |
-| **PSČ (CZ)** | `^[0-9]{5}$` bez mezer. Pozor na `char(5)` — vstup s mezerou se useknul. |
-| **E-mail** | `^[A-Za-z0-9._+%-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,24}$`. Kontroluj zvlášť `#`, `&` a mezeru uvnitř — to nejsou překlepy, ale systematická záměna. |
-| **Mobil (CZ)** | 9 číslic po strip `+420`/`00420`, první číslice 6 nebo 7. |
-| **Pevná (CZ)** | 9 číslic, první číslice 2–5. Číslo s předvolbou 2xx/5xx vedené jako mobil = sémantická chyba, ne syntaktická. |
-| **Kód země** | ISO 3166-1 alpha-3, tři velká písmena. |
+| **Birth number (rodné číslo)** | 9 or 10 digits after removing `/`. A 10-digit one is valid when `RC % 11 = 0`, or (historical exception) `first9 % 11 = 10` and the last digit is `0`. 9-digit ones (before 1954) have no check digit, validate the structure only. Month: `+50` for women, `+20`/`+70` allocation increment (since 2004). |
+| **Company ID (IČO)** | 8 digits (pad with leading zeros). Mod 11: weights 8..2 on the first 7 digits, `remainder = sum % 11`, check digit `(11 - remainder) % 10`. |
+| **Postcode (CZ)** | `^[0-9]{5}$` without spaces. Watch for `char(5)`: input with a space got truncated. |
+| **E-mail** | `^[A-Za-z0-9._+%-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,24}$`. Check `#`, `&` and an inner space separately; they are not typos but a systematic character swap. |
+| **Mobile (CZ)** | 9 digits after stripping `+420`/`00420`, first digit 6 or 7. |
+| **Landline (CZ)** | 9 digits, first digit 2–5. A number with prefix 2xx/5xx recorded as a mobile = a semantic error, not a syntactic one. |
+| **Country code** | ISO 3166-1 alpha-3, three capital letters. |
 
-Placeholdery se vyhodnocují ještě před regexem, ale nepočítej je jako syntaktickou chybu —
-jsou to **fantomy, tedy chybějící hodnota, a patří do úplnosti**. Kdybys je pustil do regexu,
-vykážeš jednu díru dvakrát a v nesprávné vlastnosti:
-`''`, `NA`, `N/A`, `NULL`, `.`, `-`, `cizinec`, `NEVYPLNENO`, `9999999999`, `0000000000`,
-`99999`, `00000`, číslo tvořené jednou opakovanou číslicí.
+Placeholders are evaluated before the regex, but do not count them as syntactic errors: they are **phantom
+values, i.e. missing values, and belong to completeness**. If you let them into the regex, you report one
+gap twice and under the wrong characteristic: `''`, `NA`, `N/A`, `NULL`, `.`, `-`, `cizinec`,
+`NEVYPLNENO`, `9999999999`, `0000000000`, `99999`, `00000`, a number made of one repeated digit.
 
-## Zápis do DQM_MDR
+## Writing to DQM_MDR
 
-Metadatový repozitář = `information_schema` rozšířený o sloupce pro naměřené dimenze
-(`COMPLETENESS`, `SYN_CORR`, `SEM_CORR`, `INT_CONS`, `EXT_CONS`). Jeden řádek = jeden sloupec
-jedné tabulky. Skóre je podíl v intervalu 0–1, počítaný **vůči relevantnímu univerzu**:
+The metadata repository = `information_schema` extended with columns for the measured dimensions
+(`COMPLETENESS`, `SYN_CORR`, `SEM_CORR`, `INT_CONS`, `EXT_CONS`). One row = one column of one table. The
+score is a share between 0 and 1, computed **against the relevant universe**:
 
 ```sql
 UPDATE DQM_MDR SET COMPLETENESS = (
@@ -158,37 +159,38 @@ UPDATE DQM_MDR SET COMPLETENESS = (
 WHERE TABLE_NAME = 'PART_PARTY' AND COLUMN_NAME = 'PARTY_FNAME';
 ```
 
-Názvy sloupců si drž konzistentní s tím, co používá tvoje prostředí — vedle rozepsaných názvů
-jsou v oběhu i pětipísmenné kódy `CMPLT`, `SNCOR`, `SMCOR`, `INCNS`, `EXCNS`, `UNQNS`.
+Keep the column names consistent with what your environment uses; next to the spelled-out names, the
+five-letter codes `CMPLT`, `SNCOR`, `SMCOR`, `INCNS`, `EXCNS`, `UNQNS` are also in circulation.
 
-**Naplněnost MDR** je sama o sobě metrika. Když repozitář eviduje 39 sloupců ze 4 tabulek,
-zatímco databáze má 23 tabulek, je to finding („MDR nepokrývá univerzum") a zároveň úkol —
-rozšířit ho. Neříkej tomu *pokrytí*: ten pojem je v DQ názvosloví obsazený pro kontextuální
-vlastnost dat, tedy jakou část možných hodnot atribut vůbec obsahuje.
+**How full the MDR is** is a metric in itself. When the repository records 39 columns from 4 tables while
+the database has 23 tables, that is a finding ("the MDR does not cover the universe") and a task, to extend
+it. Do not call it *coverage*: in DQ vocabulary that term is taken by a contextual characteristic of data,
+i.e. what share of the possible values an attribute contains at all.
 
-Ne každá vlastnost dává smysl u každého sloupce. Nevyplňuj nulou, nech NULL a uveď proč —
-nula je naměřená hodnota „nic nevyhovuje", ne „neměřeno", a v agregaci by strhla skóre dolů.
+Not every characteristic makes sense for every column. Do not fill in zero; leave NULL and say why. Zero is
+a measured value meaning "nothing passes", not "not measured", and in an aggregate it would drag the score
+down.
 
-## Agregace skóre
+## Aggregating the score
 
-Skóre na sloupec je meziprodukt. Nad ním se agreguje ve dvou krocích:
+The score per column is an intermediate result. It is aggregated in two steps:
 
-1. **Skóre atributu = minimum z jeho naměřených vlastností.** Limitující faktor: 90% úplnost
-   při 80% syntaktické správnosti dává použitelnost 80 %. Rozhoduje nejslabší vlastnost,
-   protože proces spadne na ní — průměr by ji schoval.
-2. **Skóre užití = vážený průměr těch minim** přes atributy, na kterých daný proces stojí
-   (podle matice užití v `dq-auditor`). Ne přes všechny sloupce tabulky: atribut, který
-   cross-sell nepotřebuje, jeho skóre ovlivňovat nemá.
+1. **Attribute score = the minimum of its measured characteristics.** The limiting factor: 90 %
+   completeness with 80 % syntactic correctness gives 80 % usability. The weakest characteristic decides,
+   because the process fails on it; an average would hide it.
+2. **Use score = the weighted average of those minimums** over the attributes the process relies on (per
+   the usage matrix in `dq-auditor`). Not over every column of the table: an attribute cross-selling does
+   not need should not affect its score.
 
-**Jedno celkové skóre za databázi nepočítej.** Váží všechno stejným metrem a schová kritický
-lokální defekt v moři čistých sloupců. Když ho management chce, dodej ho výhradně s rozpadem
-po užitích a se jménem nejhoršího atributu.
+**Do not compute one overall score for the database.** It weighs everything by the same measure and hides a
+critical local defect in a sea of clean columns. When management wants one, deliver it only with a
+breakdown by use and the name of the worst attribute.
 
-## Výstup validatoru
+## Output of the validator
 
-Na tabulku jedna sekce `## 3. Audit` členěná přesně po dimenzích (Úplnost, Syntaktická
-správnost, Sémantická správnost, Unikátnost, Vnitřní konzistentnost, Vnější konzistentnost,
-Zápis DQ skóre). Ke každé: kritérium, dotaz, naměřené číslo, vzorek, jednovětná interpretace.
+Per table one section `## 3. Audit`, split exactly by dimension (Completeness, Syntactic correctness,
+Semantic correctness, Uniqueness, Internal consistency, External consistency, Writing the DQ score). For
+each: criterion, query, measured number, sample, one-sentence interpretation.
 
-Interpretace musí být konkrétní. „Spouští SQL" nebo „zpracovává data" není interpretace —
-napiš, co se validuje, kolik toho neprošlo a co to pro byznys znamená.
+The interpretation must be concrete. "Runs SQL" or "processes data" is not an interpretation; write what is
+being validated, how much of it failed and what it means for the business.

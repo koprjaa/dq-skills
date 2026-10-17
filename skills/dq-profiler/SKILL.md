@@ -1,41 +1,41 @@
 ---
 name: dq-profiler
-description: Technický profiling databáze — inventura tabulek, struktura a datové typy, collation, PK/FK/indexy, frekvenční distribuce, vzorky, detekce vzorců defektů (plošné konstanty, sentinel hodnoty, padding, useknuté hodnoty, sirotčí řady ID). První krok DQ pipeline, před dq-validator. Použij, když se má "podívat na databázi", "zjistit co v těch datech je", "profiling", "průzkum dat", "co je s tou databází špatně". Keywords: profiling, data profiling, inventura, struktura tabulek, collation, distribuce hodnot, průzkum databáze.
+description: Technical profiling of a database. Table inventory, structure and data types, collation, PK/FK/indexes, frequency distributions, samples, and detection of defect patterns (blanket constants, sentinel values, padding, truncated values, orphan ID ranges). The first step of the DQ pipeline, before dq-validator. Use it when someone wants to "look at the database", "find out what is in this data", "profiling", "data exploration", "what is wrong with this database". Keywords: profiling, data profiling, inventory, table structure, collation, value distribution, database exploration.
 ---
 
-# Profiler — technický profiling
+# Profiler: technical profiling
 
-První krok. **Hledej tvar dat, ne ještě čísla o chybách.** Symptomů si všímej — odlehlé
-hodnoty, anomálie, podezřelé konstanty sem patří — ale systematické měření podle pravidel
-dělá až `dq-validator`, poté co víš, co v tabulkách vůbec je. Profiler končí seznamem
-tabulek, jejich rolí a seznamem podezření, které validator ověří.
+First step. **Look for the shape of the data, not yet for error counts.** Do notice symptoms (outliers,
+anomalies, suspicious constants belong here), but systematic measurement against rules is done by
+`dq-validator` once you know what the tables contain. The profiler ends with a list of tables, their roles
+and a list of suspicions for the validator to verify.
 
-Pipeline: **dq-profiler** → `dq-validator` → `dq-auditor` → remediace. Společný standard
-(dimenze, formát zjištění) je v `dq-pipeline`.
+Pipeline: **dq-profiler** → `dq-validator` → `dq-auditor` → remediation. The shared standard (dimensions,
+finding format) is in `dq-pipeline`.
 
-## Krok 1 — inventura a role tabulek
+## Step 1: inventory and table roles
 
-Roztřiď všechny tabulky do tří košů. Bez toho nevíš, co je univerzum auditu a co referenční
-standard, kterým se univerzum měří:
+Sort every table into three bins. Without that you do not know what the audit universe is and what the
+reference standard is that measures it:
 
-| Koš | Poznávací znak | Role v auditu |
+| Bin | How to recognise it | Role in the audit |
 |---|---|---|
-| **provozní** | transakční/kmenová data, roste v čase | univerzum auditu |
-| **číselník (LOV)** | pár desítek řádků, `CODE`+`VALUE`, interní doména | měřítko pro SEM_CORR |
-| **referenční (REF)** | externí standard nebo registr, statisíce až miliony řádků | měřítko pro EXT_CONS |
+| **operational** | transactional/master data, grows over time | the audit universe |
+| **code list (LOV)** | a few dozen rows, `CODE`+`VALUE`, internal domain | yardstick for SEM_CORR |
+| **reference (REF)** | external standard or registry, hundreds of thousands to millions of rows | yardstick for EXT_CONS |
 
-Prefix v názvu neber jako pravdu, ověř obsahem. V auditované DB byly `REF_TITBEF`, `REF_FNAME`,
-`REF_NACE` strukturou obyčejné číselníky (LOV), zatímco `LOV_COUNTRY` a `LOV_ESA95` byly
-externí standardy (ISO 3166-1, ESA95) → měly být REF. Záměna prefixů je sama o sobě finding.
+Do not trust the prefix in the name, verify by content. In the audited database `REF_TITBEF`, `REF_FNAME`
+and `REF_NACE` were plain code lists (LOV) by structure, while `LOV_COUNTRY` and `LOV_ESA95` were external
+standards (ISO 3166-1, ESA95) → should have been REF. Mixed-up prefixes are a finding in themselves.
 
 ```sql
 SELECT TABLE_NAME, TABLE_ROWS, ENGINE, TABLE_COLLATION
 FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() ORDER BY TABLE_ROWS DESC;
 ```
 
-`TABLE_ROWS` je u InnoDB odhad. Pro metriky vždy `COUNT(*)`.
+`TABLE_ROWS` is an estimate in InnoDB. For metrics always use `COUNT(*)`.
 
-## Krok 2 — struktura, typy, collation (konzistentnost schématu)
+## Step 2: structure, types, collation (schema consistency)
 
 ```sql
 SELECT TABLE_NAME, COLUMN_NAME, DATA_TYPE, COLUMN_TYPE, IS_NULLABLE, COLUMN_DEFAULT,
@@ -44,62 +44,62 @@ FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE()
 ORDER BY TABLE_NAME, ORDINAL_POSITION;
 ```
 
-Co číst z výstupu:
+What to read from the output:
 
-| Signál | Co znamená | Reálný příklad |
+| Signal | What it means | Real example |
 |---|---|---|
-| `char(n)` na proměnlivě dlouhém textu | padding mezerami + tiché useknutí delšího vstupu | `PARTY_TITBEF char(10)` → `'PhDr      '`; `ADDR_ZIP char(5)` + vstup `251 62` → uloženo `251 6` |
-| `char(4)` / `tinyint` / `char(1)` pro tentýž Y/N příznak | tři implementace téhož konceptu | `DEL_FLAG` napříč 9 číselníky |
-| nullable u logicky povinného sloupce | chybí constraint, aplikace to nehlídá | `PARTY_TYPE` nullable |
-| `NOT NULL` + prázdný default | „vyplněno" znamená prázdný řetězec | `ADDR_TYPE NOT NULL DEFAULT ''` |
-| více collation v jedné tabulce | JOIN spadne na Error 1267 nebo tiše nesparuje | `ADDR_CITY utf8mb3_czech_ci` vs `ADDR_TYPE utf8mb4_0900_ai_ci` |
-| číselný typ na kódu s vedoucí nulou | ztráta nul (IČO, PSČ) | `ADDR_ZIP_STD integer` |
-| lokalizované zkratky v jinak anglickém schématu | naming convention porušena selektivně | `PARTY_RC`, `PARTY_OKEC` |
+| `char(n)` on variable-length text | space padding + silent truncation of longer input | `PARTY_TITBEF char(10)` → `'PhDr      '`; `ADDR_ZIP char(5)` + input `251 62` → stored `251 6` |
+| `char(4)` / `tinyint` / `char(1)` for the same Y/N flag | three implementations of one concept | `DEL_FLAG` across 9 code lists |
+| nullable on a logically mandatory column | missing constraint, the application does not enforce it | `PARTY_TYPE` nullable |
+| `NOT NULL` + empty default | "filled" means an empty string | `ADDR_TYPE NOT NULL DEFAULT ''` |
+| several collations in one table | JOIN fails with Error 1267 or silently does not match | `ADDR_CITY utf8mb3_czech_ci` vs `ADDR_TYPE utf8mb4_0900_ai_ci` |
+| numeric type on a code with a leading zero | zeros lost (company IDs, postcodes) | `ADDR_ZIP_STD integer` |
+| localised abbreviations in an otherwise English schema | naming convention broken selectively | `PARTY_RC`, `PARTY_OKEC` |
 
-Collation zmapuj **jako matici** — pro každou plánovanou JOIN vazbu porovnej collation obou
-stran. Nesoulad zapiš jako finding hned, netahej ho do validatoru jako překvapení.
+Map collation **as a matrix**: for every planned JOIN compare the collation of both sides. Record a
+mismatch as a finding right away; do not carry it into the validator as a surprise.
 
 ```sql
-SELECT COLLATION_NAME, COUNT(*) sloupcu, GROUP_CONCAT(DISTINCT TABLE_NAME) tabulky
+SELECT COLLATION_NAME, COUNT(*) columns, GROUP_CONCAT(DISTINCT TABLE_NAME) tables
 FROM information_schema.COLUMNS
 WHERE TABLE_SCHEMA = DATABASE() AND COLLATION_NAME IS NOT NULL GROUP BY 1;
 ```
 
-## Krok 3 — klíče, indexy, referenční integrita
+## Step 3: keys, indexes, referential integrity
 
 ```sql
--- PK a unikátní indexy
+-- PKs and unique indexes
 SELECT TABLE_NAME, INDEX_NAME, NON_UNIQUE,
        GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX) cols
 FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE()
 GROUP BY 1,2,3 ORDER BY 1;
 
--- deklarované FK
+-- declared FKs
 SELECT TABLE_NAME, COLUMN_NAME, REFERENCED_TABLE_NAME, REFERENCED_COLUMN_NAME
 FROM information_schema.KEY_COLUMN_USAGE
 WHERE TABLE_SCHEMA = DATABASE() AND REFERENCED_TABLE_NAME IS NOT NULL;
 ```
 
-**Prázdný výsledek druhého dotazu je kritický nález, ne technikálie.** V auditované DB nemělo FK
-ani jedno z 9 číselníků a 8 referenčních tabulek — jediným zdrojem integrity byla aplikační
-vrstva, která prokazatelně selhávala (91 693 smluv s kódem frekvence mimo číselník,
-382 210 adres s typem mimo číselník, 37 879 osiřelých kontaktů).
+**An empty result of the second query is a critical finding, not a technicality.** In the audited
+database not one of 9 code lists and 8 reference tables had an FK; the only source of integrity was the
+application layer, which demonstrably failed (91,693 contracts with a frequency code outside the code list,
+382,210 addresses with a type outside the code list, 37,879 orphaned contacts).
 
-Sestav **seznam chybějících FK** — každá vazba, kterou datový model implikuje, ale schéma
-nevynucuje. Ten seznam je příloha zprávy a zároveň zadání pro `dq-strazce`.
+Build a **list of missing FKs**: every relationship the data model implies but the schema does not enforce.
+That list is an appendix of the report and at the same time the brief for `dq-guard`.
 
-Pozor i na PK: surrogate `auto_increment` PK ještě neznamená unikátnost byznysovou.
-`PARTY_ADDRESS` měla PK na `ADDR_ID`, ale nic nebránilo uložit tutéž adresu klientovi 3×.
-Jednoznakový PK (`CODE char(1)`) je křehký — při rozšíření číselníku dojde ke kolizi.
+Watch PKs too: a surrogate `auto_increment` PK does not yet mean business uniqueness. `PARTY_ADDRESS` had a
+PK on `ADDR_ID`, but nothing prevented storing the same address for a client three times. A one-character
+PK (`CODE char(1)`) is fragile; extending the code list leads to a collision.
 
-## Krok 4 — objem a základní charakteristiky
+## Step 4: volume and basic characteristics
 
-Pro každou provozní tabulku: `COUNT(*)`, rozpad podle typu entity, min/max u datumů a čísel,
-počet distinct u kandidátů na kategorii.
+For every operational table: `COUNT(*)`, a breakdown by entity type, min/max on dates and numbers, distinct
+counts on category candidates.
 
-U číselných sloupců nekonči u průměru — jediný extrém ho utáhne kamkoli. Kvantily, rozptyl
-a směrodatná odchylka, šikmost a špičatost řeknou o rozdělení podstatně víc; useknutý průměr
-je levná pojistka proti odlehlým hodnotám.
+For numeric columns do not stop at the mean; a single extreme drags it anywhere. Quantiles, variance and
+standard deviation, skewness and kurtosis say much more about the distribution; a trimmed mean is a cheap
+safeguard against outliers.
 
 ```sql
 SELECT PARTY_TYPE, COUNT(*) freq FROM PART_PARTY GROUP BY 1 ORDER BY freq DESC;
@@ -107,104 +107,104 @@ SELECT MIN(CNTR_VALIDFROM), MAX(CNTR_VALIDFROM), MIN(CNTR_VALIDTO), MAX(CNTR_VAL
 FROM PROD_CONTRACT;
 ```
 
-`MAX` u datumu je jeden z nejlevnějších detektorů sentinelů — když vyjde `2999-12-31`
-nebo `3000-01-01`, máš rovnou nález i vysvětlení.
+`MAX` on a date is one of the cheapest sentinel detectors: when it returns `2999-12-31` or `3000-01-01`,
+you have both the finding and the explanation.
 
-## Krok 5 — frekvenční distribuce (jádro profilingu)
+## Step 5: frequency distributions (the core of profiling)
 
-Pro každý kategoriální a podezřelý sloupec:
+For every categorical and suspicious column:
 
 ```sql
 SELECT <col>, COUNT(*) freq, ROUND(100.0*COUNT(*)/(SELECT COUNT(*) FROM <t>),2) pct
 FROM <t> GROUP BY 1 ORDER BY freq DESC LIMIT 20;
 
--- délková distribuce odhalí padding i useknutí
+-- the length distribution reveals padding and truncation
 SELECT LENGTH(<col>) len, COUNT(*) freq FROM <t> GROUP BY 1 ORDER BY 1;
 
--- distribuce dne v měsíci odhalí day/month swap při importu
-SELECT DAY(<date_col>) den, COUNT(*) FROM <t> GROUP BY 1 ORDER BY 1;
+-- the day-of-month distribution reveals a day/month swap at import
+SELECT DAY(<date_col>) day, COUNT(*) FROM <t> GROUP BY 1 ORDER BY 1;
 
--- distribuce roku odhalí dávkový import
-SELECT YEAR(<date_col>) rok, COUNT(*) FROM <t> GROUP BY 1 ORDER BY 2 DESC LIMIT 15;
+-- the year distribution reveals a batch import
+SELECT YEAR(<date_col>) year, COUNT(*) FROM <t> GROUP BY 1 ORDER BY 2 DESC LIMIT 15;
 ```
 
-Nepřirozený peak v jednom roce = migrace nebo dávkový import. V auditované DB mělo 26 000+
-klientů rok narození 2010 a **všech** 31 764 antedatovaných smluv pocházelo z roku 2012.
+An unnatural peak in one year = a migration or a batch import. In the audited database 26,000+ clients had
+birth year 2010 and **all** 31,764 back-dated contracts came from 2012.
 
-## Krok 6 — vzorek dat očima, ne dotazem
+## Step 6: look at a sample with your eyes, not with a query
 
-`SELECT * FROM <t> LIMIT 5` a pořádně se podívej. Prvních pět řádků `PARTY_ADDRESS` ukázalo
-naráz: prázdné `ADDR_NUM1/NUM2`, číslo domu slité do `ADDR_STREET` („Na Budíně 854"),
-konstantní `CZE` a duplicitní adresu u dvou různých klientů. Čtyři nálezy z jednoho pohledu.
+`SELECT * FROM <t> LIMIT 5` and look properly. The first five rows of `PARTY_ADDRESS` showed at once: empty
+`ADDR_NUM1/NUM2`, the house number merged into `ADDR_STREET` ("Na Budíně 854"), a constant `CZE` and a
+duplicate address for two different clients. Four findings from one look.
 
-## Odlehlá pozorování
+## Outliers
 
-`MIN`/`MAX` je detektor fantomů, ne analýza odlehlých hodnot. Dvě věci k tomu:
+`MIN`/`MAX` is a phantom detector, not an outlier analysis. Two things to add:
 
-- **Odlehlá hodnota nemusí být chyba.** Pojistná částka o řád vyšší než zbytek je buď překlep,
-  nebo největší klient v portfoliu. Rozhoduje doménový úsudek, ne kvantil — a než ji označíš
-  za defekt, zeptej se někoho, kdo tomu procesu rozumí.
-- **Na rozhodnutí „šum, nebo signál" existuje aparát.** Pravidlo 4 sigma a box-plot na rychlý
-  screening, Grubbsův nebo Dixonův test na jednu podezřelou hodnotu, Chauvenetovo a Peircovo
-  kritérium, u vícerozměrných dat hustotní metody (LOF, LOCI, INFLO). Metodu určuje rozdělení
-  dat, ne zvyk — u nenormálního rozdělení sigma pravidlo lže.
+- **An outlier need not be an error.** A sum insured an order of magnitude above the rest is either a typo
+  or the largest client in the portfolio. Domain judgement decides, not a quantile; before you call it a
+  defect, ask someone who understands the process.
+- **There is an apparatus for deciding "noise or signal".** The 4-sigma rule and a box plot for quick
+  screening, Grubbs' or Dixon's test for one suspicious value, Chauvenet's and Peirce's criteria, and for
+  multivariate data density methods (LOF, LOCI, INFLO). The distribution of the data chooses the method, not
+  habit; with a non-normal distribution the sigma rule lies.
 
-Do zprávy patří, kterou metodou jsi odlehlé hodnoty určil a kolik jich bylo. Ne jen výsledný
-počet „chyb".
+The report states which method identified the outliers and how many there were. Not just the final count
+of "errors".
 
-## Katalog vzorců defektů
+## Defect pattern catalogue
 
-Tohle hledej v distribucích a vzorcích. Každý řádek je hypotéza pro `dq-validator`.
+Look for these in the distributions and samples. Each row is a hypothesis for `dq-validator`.
 
-| Vzorec | Jak vypadá | Kořenová příčina | Ověření |
+| Pattern | What it looks like | Root cause | Verification |
 |---|---|---|---|
-| **Plošná konstanta** (*fantom*) | jedna hodnota u 100 % řádků | sloupec plněn defaultem, ne ze vstupu | křížová kontrola s atributem, který konstantě odporuje |
-| **Zástupná hodnota místo NULL** | `NA`, `NEVYPLNENO`, `cizinec`, `9999999999`, `.` | vstupní pole je NOT NULL, operátor musí něco napsat | frekvenční distribuce, TOP hodnoty |
-| **Sentinel datum** | `2999-12-31`, `2999-01-01`, `1900-01-01`, `3000-01-01` | systém neumí NULL / „nekonečná platnost" | `MAX()`/`MIN()` na datumech |
-| **Padding na fixní délku** | `'PhDr      '`, délka přesně `n` | import do `char(n)` bez trimu | délková distribuce |
-| **Useknutá hodnota** | `251 6`, `400 0` místo `251 62` | `char(5)` + vstup s mezerou | regex validace + vzorek |
-| **Prokládané mezery** | `D A V I D` | ruční přepis nebo rozbitý parser | `REGEXP '^([A-Za-z] )+'` |
-| **Kódovací chyba** | `ĄUDOVÍT` (má být `ĽUDOVÍT`), `BE0ŠOVÁ` | špatná znaková sada při migraci | hledej číslice ve jménech a nečeské znaky |
-| **Systematická záměna znaku** | `gmail#com`, `gmail&cz` | mapování znaků při importu | počítej výskyt podezřelého znaku, ne jen „nevalidní" |
-| **Sirotci v souvislé řadě ID** | `range_size = distinct_ids`, start = `max(parent)+1` | nedokončený dávkový import z jiného systému | `MIN`/`MAX`/`COUNT(DISTINCT)` na osiřelých ID |
-| **Stínová taxonomie** | kódy mimo číselník, ale masově použité | obchodníci si zavedli vlastní hodnoty | anti-join na číselník + četnost |
-| **Single-table pattern** | dva typy entit v jedné tabulce bez podtypování | chybí subtyping | rozpad completeness podle typu |
-| **Antedatování** | `valid_from > valid_to`, všechno z jednoho roku | dávkový import / pozdní integrace kanálu | distribuce roku u chybných řádků |
-| **Day/month swap** | dny 13–31 podezřele řídké | locale MM/DD vs DD/MM při importu | distribuce dne v měsíci |
-| **Redundantní sloupec** | `VALUE` == `DESCR` u 100 % řádků | kopie při návrhu, jeden se přestal udržovat | `SUM(VALUE = DESCR)` |
-| **Duplicitní kód pro tutéž hodnotu** | `Dipl.tech.` pod CODE 19 i 20 | ruční správa číselníku | `GROUP BY TRIM(VALUE) HAVING COUNT(*)>1` |
-| **Mrtvá položka číselníku** | kód existuje, 0 použití | zrušený produkt / rezerva / překlep | LEFT JOIN z číselníku na provoz |
-| **Torzo referenční tabulky** | 1 000 řádků tam, kde má být registr | vadný import nebo omezený vzorek od dodavatele | pokrytí = kolik provozních hodnot je v REF |
+| **Blanket constant** (*phantom*) | one value in 100 % of rows | column filled by a default, not from input | cross-check with an attribute that contradicts the constant |
+| **Placeholder instead of NULL** | `NA`, `NEVYPLNENO`, `cizinec`, `9999999999`, `.` | the input field is NOT NULL, the operator must type something | frequency distribution, TOP values |
+| **Sentinel date** | `2999-12-31`, `2999-01-01`, `1900-01-01`, `3000-01-01` | the system cannot store NULL / "unlimited validity" | `MAX()`/`MIN()` on dates |
+| **Fixed-length padding** | `'PhDr      '`, length exactly `n` | import into `char(n)` without trim | length distribution |
+| **Truncated value** | `251 6`, `400 0` instead of `251 62` | `char(5)` + input with a space | regex validation + sample |
+| **Interleaved spaces** | `D A V I D` | manual retyping or a broken parser | `REGEXP '^([A-Za-z] )+'` |
+| **Encoding error** | `ĄUDOVÍT` (should be `ĽUDOVÍT`), `BE0ŠOVÁ` | wrong character set at migration | look for digits in names and characters foreign to the language |
+| **Systematic character swap** | `gmail#com`, `gmail&cz` | character mapping at import | count occurrences of the suspicious character, not just "invalid" |
+| **Orphans in a contiguous ID range** | `range_size = distinct_ids`, start = `max(parent)+1` | an unfinished batch import from another system | `MIN`/`MAX`/`COUNT(DISTINCT)` on orphaned IDs |
+| **Shadow taxonomy** | codes outside the code list, but used en masse | sales staff introduced their own values | anti-join to the code list + frequency |
+| **Single-table pattern** | two entity types in one table without subtyping | missing subtyping | completeness broken down by type |
+| **Back-dating** | `valid_from > valid_to`, all from one year | batch import / late channel integration | year distribution of the bad rows |
+| **Day/month swap** | days 13–31 suspiciously rare | MM/DD vs DD/MM locale at import | day-of-month distribution |
+| **Redundant column** | `VALUE` == `DESCR` in 100 % of rows | copy at design time, one stopped being maintained | `SUM(VALUE = DESCR)` |
+| **Duplicate code for the same value** | `Dipl.tech.` under CODE 19 and 20 | manual code list maintenance | `GROUP BY TRIM(VALUE) HAVING COUNT(*)>1` |
+| **Dead code list entry** | code exists, 0 uses | retired product / reserve / typo | LEFT JOIN from the code list to operations |
+| **Stub reference table** | 1,000 rows where a registry should be | faulty import or a limited sample from the vendor | coverage = how many operational values are in REF |
 
-Zástupné a sentinelové hodnoty plošně doplněné systémem zastřešuje české názvosloví jedním
-pojmem: **fantom** (phantom).
+Placeholder and sentinel values filled in across the board by the system are covered by one term:
+**phantom value**.
 
-## Výstup profileru
+## Output of the profiler
 
-Jeden dokument (nebo notebook) na tabulku, jednotná struktura:
+One document (or notebook) per table, with a uniform structure:
 
 ```
-# <TABULKA>
-Název (co zkratka znamená) · O tabulce · Role v datovém modelu · Návaznosti
-## 2. Struktura a obsah
-  2.1 Přehled sloupců (typ, nullable, collation) + co z toho plyne
-  2.2 Základní charakteristiky (počty, rozpad podle typu entity)
-  2.3 Ukázka dat + co je na ní vidět
-## Podezření pro validaci
-  seznam hypotéz s odkazem na vzorec z katalogu
+# <TABLE>
+Name (what the abbreviation means) · About the table · Role in the data model · Dependencies
+## 2. Structure and content
+  2.1 Column overview (type, nullable, collation) + what follows from it
+  2.2 Basic characteristics (counts, breakdown by entity type)
+  2.3 Data sample + what it shows
+## Suspicions for validation
+  list of hypotheses with a reference to a pattern in the catalogue
 ```
 
-Sekci „Role v datovém modelu" nevynechávej — bez ní se v dalších krocích nepozná, které
-číselníky a registry jsou pro tabulku měřítkem.
+Do not skip the "Role in the data model" section; without it the later steps cannot tell which code lists
+and registries are the yardstick for the table.
 
-Tyhle dokumenty jsou **pracovní podklad, ne dodávka**. Dodávkou je jedna ucelená zpráva
-auditora (`dq-auditor`) podle standardů ISACA; per-table dokumenty se do ní agregují a
-v úplnosti patří do příloh.
+These documents are **working material, not the deliverable**. The deliverable is one complete auditor's
+report (`dq-auditor`) following ISACA standards; the per-table documents are aggregated into it and belong
+in full in the appendices.
 
-## Nástroje
+## Tools
 
-SQL a systémový katalog stačí na všechno výše. Když je po ruce Python, `ydata-profiling`
-vyrobí základní profil tabulky jedním příkazem (distribuce, chybějící hodnoty, korelace) —
-ber ho jako první nástřel, ne jako výstup; interpretaci a volbu univerza za tebe neudělá.
-Pojmenované nástroje oboru: Ataccama DQ Analyzer, DataCleaner, OpenRefine, z open source pro
-průběžnou validaci v pipeline Great Expectations, Soda Core, Deequ nebo dbt testy.
+SQL and the system catalogue are enough for everything above. With Python at hand, `ydata-profiling`
+produces a basic table profile with one command (distributions, missing values, correlations); treat it as
+a first pass, not as the output; it will not interpret the data or choose the universe for you. Named
+tools in the field: Ataccama DQ Analyzer, DataCleaner, OpenRefine, and for continuous validation in a
+pipeline, among open source tools, Great Expectations, Soda Core, Deequ or dbt tests.

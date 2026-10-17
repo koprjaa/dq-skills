@@ -33,11 +33,11 @@ PIPELINE = [
     "dq-validator",
     "dq-auditor",
     "dq-parser",
-    "dq-standardizator",
-    "dq-adresar",
-    "dq-imputator",
-    "dq-deduplikator",
-    "dq-strazce",
+    "dq-standardizer",
+    "dq-address",
+    "dq-imputer",
+    "dq-deduplicator",
+    "dq-guard",
 ]
 
 SKILL_FILES = sorted(SKILLS_DIR.glob("*/SKILL.md"))

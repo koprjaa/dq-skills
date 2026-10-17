@@ -1,234 +1,233 @@
 ---
 name: dq-auditor
-description: Zpráva auditora kvality dat — katalog zjištění se závažností a byznys dopadem, root-cause analýza, kvantifikace nákladů nekvality (COPQ) a ROI nápravy, matice užití dat, legislativní kontext (GDPR, AML, Solvency II), prioritizovaná nápravná opatření. Třetí krok DQ pipeline, po dq-validator. Použij, když se má "napsat zprávu auditora", "sepsat nálezy", "vyčíslit dopad nekvalitních dat", "spočítat COPQ nebo ROI", "prioritizovat opravy", "root-cause analýza". Keywords: zpráva auditora, audit report, findings, COPQ, ROI, root-cause, matice užití, byznys dopad, prioritizace.
+description: The data quality auditor's report. A finding catalogue with severity and business impact, root cause analysis, quantification of the cost of poor quality (COPQ) and the ROI of remediation, the data usage matrix, the legal context (GDPR, AML, Solvency II), and prioritised corrective actions. Third step of the DQ pipeline, after dq-validator. Use it when someone wants to "write the audit report", "write up the findings", "quantify the impact of bad data", "compute COPQ or ROI", "prioritise fixes", "root cause analysis". Keywords: audit report, findings, COPQ, ROI, root cause, usage matrix, business impact, prioritisation.
 ---
 
-# Auditor — zpráva, dopady, doporučení
+# Auditor: report, impact, recommendations
 
-Validator dodal čísla. Auditor z nich udělá **rozhodnutí**: co to firmu stojí, proč to vzniklo
-a v jakém pořadí to opravit. Zpráva bez korunové částky a bez příčiny je jen výpis dotazů.
+The validator delivered numbers. The auditor turns them into **decisions**: what it costs the company, why
+it happened and in what order to fix it. A report without a money figure and without a cause is just a
+dump of queries.
 
-Pipeline: `dq-validator` → **dq-auditor** → remediace (`dq-parser`…). Standard v `dq-pipeline`.
+Pipeline: `dq-validator` → **dq-auditor** → remediation (`dq-parser`…). Standard in `dq-pipeline`.
 
-## Struktura zprávy
+## Report structure
 
 ```
-Historie dokumentu (verze, datum, autoři, popis změn)
-Manažerské shrnutí
-  Účel a cíle · Pro koho je určeno · Omezení užití
-  Byznys dopad (po rizicích, ne po tabulkách)
-  Vyčíslení dopadů a doporučení (COPQ, náklady nápravy, ROI)
-Terminologie
-Metodika auditu (12 kroků + použité nástroje a přístup)
-Rozsah auditu (univerzum, kritéria hodnocení, standardy)
-Výsledky auditu (A/B/C/D/E po doménách + kvantifikace COPQ)
-Závěry (vyjádření ke zjištěním, root-cause, doporučení, prioritizovaná opatření)
-Mezery oproti předpokládaným kontrolám · Mimo rozsah · Omezení auditu
-Přílohy (chybějící FK, návrhy nových číselníků)
+Document history (version, date, authors, description of changes)
+Executive summary
+  Purpose and goals · Intended audience · Limitations of use
+  Business impact (by risk, not by table)
+  Quantified impact and recommendations (COPQ, cost of remediation, ROI)
+Terminology
+Audit methodology (12 steps + tools and approach used)
+Audit scope (universe, evaluation criteria, standards)
+Audit results (A/B/C/D/E by domain + COPQ quantification)
+Conclusions (opinion on the findings, root cause, recommendations, prioritised actions)
+Gaps against expected controls · Out of scope · Audit limitations
+Appendices (missing FKs, proposals for new code lists)
 ```
 
-**Manažerské shrnutí piš jako poslední, ale čte se první.** Musí obsahovat jednu částku,
-jeden termín a jedno doporučení. Ne seznam tabulek. Vejde se na **jednu A4** — píšeš pro
-představenstvo, ne pro DBA.
+**Write the executive summary last, but it is read first.** It must contain one money figure, one deadline
+and one recommendation. Not a list of tables. It fits on **one page**; you are writing for the board, not
+for the DBA.
 
-**Závěry projednej předem** s manažery, kterých se týkají — dřív, než je uvidí představenstvo.
-Je to standard ISACA a má tři důvody: anomálie může mít legitimní byznysové vysvětlení, které
-z dat nevidíš; nikdo nemá rád překvapení na boardu; a doporučení bude implementovat ten, kdo
-je slyšel poprvé od tebe, ne z plátna.
+**Discuss the conclusions in advance** with the managers they concern, before the board sees them. It is an
+ISACA standard and has three reasons: an anomaly may have a legitimate business explanation you cannot see
+in the data; nobody likes surprises at the board; and a recommendation gets implemented by the person who
+heard it first from you, not from the screen.
 
-České odborné názvosloví, když zpráva jde do akademického nebo auditního prostředí:
-COPQ → **náklady z nekvality dat**, kořenová příčina → **prapůvodní příčina**, závažnost →
-**severita**, nápravná opatření → **doporučená opatření**. Matice užití se jmenuje stejně
-(nebo BUS matrix).
+Vocabulary for an academic or audit audience: finding → **defect** or **discrepancy**, root cause →
+**primary cause**, corrective actions → **recommended actions**. The usage matrix keeps its name (or bus
+matrix).
 
-Sekce **Omezení užití** a **Identifikovaná omezení při realizaci auditu** nejsou formalita:
-audit platí ke snapshotu, k danému rozsahu a s danými zdroji. Bez toho je zpráva nepodložená.
+The **Limitations of use** and **Limitations identified during the audit** sections are not a formality:
+the audit holds for a snapshot, for a given scope and with given sources. Without them the report is
+unsupported.
 
-## Metodika — 12 kroků
+## Methodology: 12 steps
 
-| # | Krok | Čím se dělá |
+| # | Step | How it is done |
 |---|---|---|
-| 1 | Plán auditu | rozsah, harmonogram, zdroje, výstupy |
-| 2 | Vymezení univerza auditu | inventura a role tabulek (`dq-profiler`) |
-| 3 | Definice rámce auditu | standardy, nejlepší praktiky, referenční zdroje, právní normy, validační pravidla |
-| 4 | Definice měřených charakteristik | vlastnosti dat (`dq-pipeline`) |
-| 5 | Identifikace užití dat a prioritizace | matice užití: atribut → byznys proces |
-| 6 | Definice dopadů nekvalitních dat | model dopadu na proces, ještě před měřením |
-| 7 | Základní technický profiling | `dq-profiler` |
-| 8 | Naměření vlastností validačními pravidly | `dq-validator` + zápis do MDR |
-| 9 | Identifikace doporučených externích referenčních zdrojů | registry a číselníky, které v auditu chyběly (`dq-adresar`) |
-| 10 | Kvantifikace dopadů | COPQ přes procesy z matice užití |
-| 11 | Sumarizace závěrů auditu | katalog zjištění, root-cause, průřezové defekty |
-| 12 | Formulace doporučení | strategická vrstva + prioritizovaná opatření |
+| 1 | Audit plan | scope, schedule, resources, deliverables |
+| 2 | Defining the audit universe | inventory and table roles (`dq-profiler`) |
+| 3 | Defining the audit frame | standards, best practice, reference sources, legal norms, validation rules |
+| 4 | Defining the measured characteristics | data characteristics (`dq-pipeline`) |
+| 5 | Identifying data use and prioritising | usage matrix: attribute → business process |
+| 6 | Defining the impact of poor data | an impact model per process, before any measurement |
+| 7 | Basic technical profiling | `dq-profiler` |
+| 8 | Measuring characteristics with validation rules | `dq-validator` + writing to the MDR |
+| 9 | Identifying recommended external reference sources | registries and code lists missing from the audit (`dq-address`) |
+| 10 | Quantifying impact | COPQ through the processes in the usage matrix |
+| 11 | Summarising the audit conclusions | finding catalogue, root cause, cross-cutting defects |
+| 12 | Formulating recommendations | strategic layer + prioritised actions |
 
-V tom pořadí je jedna nenápadná, ale podstatná věc: **kroky 5 a 6 stojí před profilingem**.
-Model dopadu se definuje dřív, než padne první číslo — jinak si dopad podvědomě přizpůsobíš
-tomu, co ti z dat vyšlo, a zpráva se stane obhajobou nálezů místo měřením rizika.
+There is one inconspicuous but essential point in that order: **steps 5 and 6 come before profiling**. The
+impact model is defined before the first number lands; otherwise you unconsciously fit the impact to what
+the data showed, and the report becomes a defence of findings instead of a measurement of risk.
 
-Krok 9 je taky výstup, ne příprava: seznam registrů, na které se nemá kdo napojit, patří do
-doporučení. Chybějící referenční zdroj je nález.
+Step 9 is also an output, not preparation: the list of registries nobody can connect to belongs in the
+recommendations. A missing reference source is a finding.
 
-Těch dvanáct kroků skládá dohromady zavedené metodiky — když zprávu obhajuješ, jmenuj
-zdroj: **TIQM** (English) pro náklady nekvality, **Ten Steps** (McGilvray) pro matici užití
-a životní cyklus POSMAD, **TDQM** (Wang, MIT) pro IP-Map toku dat, **ISACA ITAF / COBIT**
-(standardy S7, G20) pro náležitosti a nezávislost auditorské zprávy. Bez uvedení rámce to
-čte jako ad-hoc praxe jednoho člověka, ne jako auditovatelná metodika.
+The twelve steps combine established methodologies; when you defend the report, name the source: **TIQM**
+(English) for the cost of poor quality, **Ten Steps** (McGilvray) for the usage matrix and the POSMAD life
+cycle, **TDQM** (Wang, MIT) for the IP-Map of data flow, **ISACA ITAF / COBIT** (standards S7, G20) for the
+requirements and independence of the audit report. Without naming the framework it reads as one person's ad
+hoc practice, not as an auditable methodology.
 
-Krok 5 se nejčastěji vynechává — a bez něj nejde udělat krok 10. **Matice užití** mapuje každý
-klíčový atribut na procesy, které na něm stojí (marketing, compliance/AML, regulatorní
-reporting, pojistná matematika). Ta vazba je jediný most mezi „2 % chybí" a „stojí to X Kč".
+Step 5 is the one most often skipped, and without it step 10 cannot be done. The **usage matrix** maps every
+key attribute to the processes that rely on it (marketing, compliance/AML, regulatory reporting, actuarial
+work). That link is the only bridge between "2 % are missing" and "it costs X".
 
-Ke krokům 4 a 5 patří i **subjektivní hodnocení kvality** — rozhovor nebo dotazník s uživateli
-dat a se stewardy. Naměřené číslo řekne, kolik hodnot chybí; teprve uživatel řekne, jestli je
-to defekt, nebo legitimní stav procesu. Nálezy, které v datech vidět nejsou (obcházení systému,
-stínové excely, nedůvěra v report), vylezou jen odsud.
+Steps 4 and 5 also include a **subjective assessment of quality**: an interview or questionnaire with data
+users and stewards. A measured number says how many values are missing; only the user says whether that is
+a defect or a legitimate state of the process. Findings that do not show in the data (working around the
+system, shadow spreadsheets, distrust of a report) only come out here.
 
-## Katalog zjištění
+## Finding catalogue
 
-Členěný po doménách (A hlavní entita, B kontakty, C adresy, D smlouvy a produkty,
-E číselníky a referenční tabulky), v každé tabulka `ID | Atribut | Dimenze | Naměřeno |
-Závažnost | Byznys dopad` a pod ní 3–5 odstavců interpretace, které nálezy spojují do vzorců.
+Split by domain (A main entity, B contacts, C addresses, D contracts and products, E code lists and
+reference tables), each with a table `ID | Attribute | Dimension | Measured | Severity | Business impact`
+and below it 3–5 paragraphs of interpretation that connect the findings into patterns.
 
-Interpretační odstavce jsou to, co odlišuje zprávu od výpisu. Skládej je tematicky, ne po
-řádcích: „Identifikace klienta a křížová konzistence", „Nefunkční komunikační kanály",
-„Porušení atomičnosti a nemožnost validace", „Sirotci a historický import".
+The interpretation paragraphs are what separates a report from a dump. Compose them by theme, not row by
+row: "Client identification and cross-consistency", "Dead communication channels", "Broken atomicity and
+impossible validation", "Orphans and a historical import".
 
-Ke každému velkému nálezu připoj **křížovou kontrolu** s příponou `b` (viz `dq-pipeline`).
-Křížové testování je standardní metoda; přípona `b` a rozsah tří až pěti odstavců na doménu
-jsou moje konvence, ne zavedené značení.
-Nález `A1` (konstanta „CZE") je podezření; `A1b` (2 633 klientů s literálem „cizinec" v rodném
-čísle a u všech 100 % země „CZE") je důkaz.
+For every major finding add a **cross-check** with the suffix `b` (see `dq-pipeline`). Cross-testing is a
+standard method; the `b` suffix and the three to five paragraphs per domain are my convention, not
+established notation. Finding `A1` (constant "CZE") is a suspicion; `A1b` (2,633 clients with the literal
+"cizinec" in the birth number and country "CZE" in 100 % of them) is evidence.
 
-Nezapomeň na kategorii, která nemá vlastní řádek: **průřezové architektonické defekty** —
-single-table pattern bez podtypování, chybějící FK napříč celou DB, nekonzistentní naming
-convention, záměna prefixů REF/LOV, tři různé implementace `DEL_FLAG`. Ty patří do samostatné
-sekce, protože se nedají opravit v jedné tabulce.
+Do not forget the category without a row of its own: **cross-cutting architectural defects**: the
+single-table pattern without subtyping, missing FKs across the whole database, an inconsistent naming
+convention, swapped REF/LOV prefixes, three different implementations of `DEL_FLAG`. They belong in a
+separate section, because they cannot be fixed in one table.
 
-## Root-cause analýza
+## Root cause analysis
 
-Metoda **„n-krát proč" (5 Whys)** dovedená k příčině, kterou lze **opravit procesně**, ne
-dotazem. Když příčin může být víc naráz, roztřiď je **Ishikawovým diagramem** (rybí kost) na
-procesy, lidi a technologie — jinak skončíš u jedné a zbytek přehlédneš.
-Typický výsledek — šest kořenových příčin, na které se namapují desítky nálezů:
+The **"5 Whys"** method carried through to a cause that can be **fixed in the process**, not by a query.
+When there can be several causes at once, sort them with an **Ishikawa (fishbone) diagram** into processes,
+people and technology; otherwise you stop at one and miss the rest. A typical result: six root causes that
+dozens of findings map onto:
 
-| # | Kořenová příčina | Co z ní plyne |
+| # | Root cause | What follows from it |
 |---|---|---|
-| 1 | **Absence centrálního MDM hubu** | každý kanál zakládá klienty nezávisle bez porovnání s bází → duplicity, roztříštěná historie, chybné CLV |
-| 2 | **Chybějící referenční integrita (FK)** | sirotci, hodnoty mimo číselníky, nelze zabránit budoucímu výskytu |
-| 3 | **Zastaralé a neudržované referenční zdroje** | klasifikace i registry ~10 let neplatné → validace je principiálně nesmyslná |
-| 4 | **Absence vstupních validací v aplikaci** | do pole rodného čísla lze vložit „cizinec", frekvence mimo číselník, smlouva na neaktivní produkt |
-| 5 | **Nekonzistentní naming convention** | mix jazyků a case, záměna prefixů, `DESC` vs `DESCR` → generické ETL musí ošetřovat varianty |
-| 6 | **Absence Data Governance** | není vlastnictví dat, nejsou stewardi, není datový katalog → nikdo neodpovídá za kvalitu atributu |
+| 1 | **No central MDM hub** | every channel creates clients independently without comparing against the base → duplicates, fragmented history, wrong CLV |
+| 2 | **Missing referential integrity (FK)** | orphans, values outside code lists, no way to prevent future occurrences |
+| 3 | **Obsolete and unmaintained reference sources** | classifications and registries ~10 years out of date → validation is meaningless in principle |
+| 4 | **No input validation in the application** | the birth number field accepts "cizinec", frequency outside the code list, a contract on an inactive product |
+| 5 | **Inconsistent naming convention** | mixed languages and case, swapped prefixes, `DESC` vs `DESCR` → generic ETL has to handle variants |
+| 6 | **No data governance** | no data ownership, no stewards, no data catalogue → nobody is accountable for an attribute's quality |
 
-Pravidlo: ke každé příčině uveď **evidenci z dat** (konkrétní nález s číslem) a **odkaz na
-architekturu** (který systém, který kanál, kdy vzniká). Odborně: příčinu lokalizuješ přes
-**data lineage** (čím hodnota prošla) a **data provenance** (odkud přišla). Diagram toku dat
-mezi kanály a systémy vysvětlí příčinu líp než odstavec. Formální notace na to je **IP-Map**
-(TDQM, MIT): zdroje dat, transformace, role uživatelů a zvlášť vyznačené DQ aktivity — z obrázku
-je pak vidět, ve kterém úseku toku kontrola úplně chybí.
+Rule: for every cause give **evidence from the data** (a specific finding with a number) and **a reference to
+the architecture** (which system, which channel, when it arises). Formally: you locate the cause through
+**data lineage** (what the value went through) and **data provenance** (where it came from). A diagram of the
+data flow between channels and systems explains the cause better than a paragraph. The formal notation for it
+is the **IP-Map** (TDQM, MIT): data sources, transformations, user roles and DQ activities marked separately;
+the picture then shows which stretch of the flow has no control at all.
 
-Kaskády pojmenuj: duplicitní adresy nejsou samostatný problém, ale důsledek chybějící
-deduplikace klientů (příčina #1). Bez toho se opravuje symptom.
+Name the cascades: duplicate addresses are not a separate problem but a consequence of missing client
+deduplication (cause #1). Without that you fix a symptom.
 
-## COPQ — kvantifikace nákladů nekvality
+## COPQ: quantifying the cost of poor quality
 
-Postup na každý proces z matice užití:
+The procedure for each process in the usage matrix:
 
-1. **Zasažené univerzum** — kolik entit je defektem vyřazeno z procesu.
-2. **Jednotková hodnota** — kolik proces vydělá na jedné entitě (marže, provize, hodnota smlouvy).
-3. **Konverze / pravděpodobnost** — kolik z nich by reálně dopadlo.
-4. **Frekvence** — ročně, nebo jednorázový potenciál (**a v tabulce to rozliš**).
-5. **Ztráta = 1 × 2 × 3 × 4.**
+1. **Affected universe**: how many entities the defect removes from the process.
+2. **Unit value**: how much the process earns on one entity (margin, commission, contract value).
+3. **Conversion / probability**: how many of them would actually convert.
+4. **Frequency**: yearly, or a one-off potential (**and keep them apart in the table**).
+5. **Loss = 1 × 2 × 3 × 4.**
 
-Typické procesy: cross-sell kampaně (ročně), up-sell (jednorázový potenciál), retence (ročně),
-pojistně-matematické výpočty a technické rezervy (jednorázová chybná alokace).
+Typical processes: cross-sell campaigns (yearly), up-sell (one-off potential), retention (yearly), actuarial
+calculations and technical provisions (one-off misallocation).
 
-Dva se přehlížejí a přitom jsou nejdražší:
+Two are overlooked and yet the most expensive:
 
-- **Degradace CLV** — klient rozpadlý do dvou záznamů spadne v segmentaci níž, dostane horší
-  péči a roste u něj pravděpodobnost odchodu. Ztráta není jedna kampaň, ale zbytek jeho
-  životního cyklu.
-- **Znehodnocení propensity modelů** — bez funkčního telefonu a e-mailu není follow-up
-  a response rate spadne řádově (v modelovém příkladu z 20 % na 10 %). Model je dobrý,
-  jen na něm nejde jednat.
+- **CLV degradation**: a client split into two records falls lower in segmentation, gets worse care and is more
+  likely to leave. The loss is not one campaign but the rest of their life cycle.
+- **Devalued propensity models**: without a working phone and e-mail there is no follow-up and the response
+  rate drops by an order (in the model example from 20 % to 10 %). The model is fine; you just cannot act on
+  it.
 
-Proti tomu **náklady nápravy**: člověkodny × sazba × velikost týmu, plus licence/napojení
-na registry. ROI počítej **konzervativně** — jen z nejjistějšího proudu, ne ze součtu všech.
-Je to přísnější než školní model, který ROI počítá ze součtu všech vyčíslených ztrát. Důvod:
-číslo, které stojí na jednom dobře podloženém proudu, se u stolu s auditovaným shazuje hůř
-než součet čtyř odhadů.
+Against that, the **cost of remediation**: person-days × rate × team size, plus licences/registry
+connections. Compute ROI **conservatively**, only from the most certain stream, not from the sum of all.
+That is stricter than the textbook model, which computes ROI from the sum of all quantified losses. The
+reason: a number that stands on one well-supported stream is harder to knock down at the table with the
+auditee than a sum of four estimates.
 
-Reálný příklad struktury výsledku:
+A real example of the shape of the result:
 
-| Položka | Hodnota |
+| Item | Value |
 |---|---|
-| COPQ celkem (konzervativně) | > 260 mil. Kč |
-| z toho cross-sell (ročně) | 7 662 600 Kč |
-| z toho up-sell (jednorázový potenciál) | 153 252 000 Kč |
-| z toho retence (ročně) | 38 313 000 Kč |
-| z toho chybná alokace technických rezerv | ~61 600 000 Kč |
-| Náklady projektu nápravy | 2 400 000 Kč (80 dní × 5 lidí) |
-| **ROI (jen z cross-sell)** | **219 %** — návratnost v prvním roce |
+| Total COPQ (conservative) | > CZK 260 M |
+| of which cross-sell (yearly) | CZK 7,662,600 |
+| of which up-sell (one-off potential) | CZK 153,252,000 |
+| of which retention (yearly) | CZK 38,313,000 |
+| of which misallocation of technical provisions | ~CZK 61,600,000 |
+| Cost of the remediation project | CZK 2,400,000 (80 days × 5 people) |
+| **ROI (cross-sell only)** | **219 %**, payback in the first year |
 
-Každý předpoklad vypiš explicitně (počet klientů, marže, konverze). Auditovaný musí být
-schopen ti čísla oponovat — o to jde. Nepodložený odhad vydávaný za výpočet je horší než
-přiznaný odhad.
+List every assumption explicitly (number of clients, margin, conversion). The auditee must be able to
+challenge your numbers; that is the point. An unsupported estimate passed off as a calculation is worse than
+an admitted estimate.
 
-**Jak to prezentovat.** Tabulka čísel před představenstvem sama neprojde. Použij **waterfall
-graf**: vlevo výchozí náklady z nekvality, jednotlivé nápravné projekty jako sloupce dolů,
-vpravo cílový stav — je to reconciliace mezi „stojí nás to X" a „po nápravě Y", a vysvětlí
-za tebe, kam ty peníze zmizí. Ke tvrdým číslům připoj jeden **katastrofický příběh**
-z provozu: konkrétní historka o tom, co defekt způsobil, prodá rozpočet líp než čtvrté
-desetinné místo.
+**How to present it.** A table of numbers will not get through the board on its own. Use a **waterfall
+chart**: on the left the starting cost of poor quality, the individual remediation projects as bars going
+down, on the right the target state. It reconciles "it costs us X" with "after remediation Y" and explains for
+you where the money goes. Add one **catastrophe story** from operations to the hard numbers: a concrete
+anecdote about what the defect caused sells the budget better than the fourth decimal place.
 
-## Legislativní kontext
+## Legal context
 
-Ke každé doméně připoj normu, kterou defekt porušuje. Nejde o ozdobu — mění to závažnost
-z „střední" na „kritické" a je to nejsilnější argument pro rozpočet:
+For every domain add the norm the defect breaches. It is not decoration: it changes severity from "medium"
+to "critical" and is the strongest argument for budget. The examples are from the EU and the Czech
+Republic; use the equivalent norms of your jurisdiction:
 
-| Norma | Co vyžaduje | Typický defekt, který ji porušuje |
+| Norm | What it requires | Typical defect that breaches it |
 |---|---|---|
-| **GDPR** (2016/679, čl. 5) | přesnost údajů, minimalizace, právo na výmaz | osobní údaje bez identifikovatelného subjektu (sirotci); duplicity znemožňující výmaz |
-| **AML/KYC** (253/2008 Sb.) | identifikace klienta, PEP screening, sankční seznamy | plošná konstanta v zemi původu a místě narození; text v rodném čísle |
-| **Solvency II** (2009/138/ES) | správné technické rezervy a SCR | chybný věk, zrušené smlouvy tvářící se jako aktivní, antedatace |
-| **Zákon o pojišťovnictví** (277/2009 Sb.) | doručování dokumentů, evidence smluv | nedoručitelné adresy, chybějící PSČ |
-| **Zákon o el. komunikacích** (480/2004 Sb.) | pravidla obchodních sdělení | rozesílka na systematicky poškozené e-maily → blacklisting domény |
-| **Zákon o základních registrech** (111/2009 Sb.) | RÚIAN jako autoritativní zdroj adres | validace proti registru zrušenému v roce 2012 |
+| **GDPR** (2016/679, Art. 5) | accuracy, minimisation, right to erasure | personal data without an identifiable subject (orphans); duplicates that make erasure impossible |
+| **AML/KYC** (Czech Act 253/2008) | client identification, PEP screening, sanctions lists | a blanket constant in country of origin and place of birth; text in the birth number |
+| **Solvency II** (2009/138/EC) | correct technical provisions and SCR | wrong age, cancelled contracts appearing active, back-dating |
+| **Insurance Act** (Czech Act 277/2009) | delivery of documents, contract records | undeliverable addresses, missing postcodes |
+| **Electronic Communications Act** (Czech Act 480/2004) | rules for commercial communications | mailing to systematically corrupted e-mails → domain blacklisting |
+| **Basic Registers Act** (Czech Act 111/2009) | RÚIAN as the authoritative address source | validation against a registry abolished in 2012 |
 
-## Doporučení a prioritizace
+## Recommendations and prioritisation
 
-Dvě vrstvy, obě povinné:
+Two layers, both mandatory:
 
-**Strategická** — MDM hub, zavedení FK, napojení na aktuální státní registry, sjednocení
-collation, vstupní kontroly, atomizace adres, naming standard, Data Governance, kontinuální
-monitoring, rozšíření datového modelu.
+**Strategic**: an MDM hub, introducing FKs, connecting to current state registries, unifying collation, input
+controls, atomising addresses, a naming standard, data governance, continuous monitoring, extending the data
+model.
 
-**Specifická nápravná opatření** — tabulka `Priorita | Tabulka/Oblast | Opatření | Přínos`,
-kde každý řádek je konkrétní a spočítaný: „Opravit 22 694 e-mailů (`#` → `@`, `&` → `.`)
-a zavést regex validaci na vstupu → funkční elektronická komunikace".
+**Specific corrective actions**: a table `Priority | Table/Area | Action | Benefit`, where every row is
+concrete and quantified: "Fix 22,694 e-mails (`#` → `@`, `&` → `.`) and introduce regex validation at input →
+working electronic communication".
 
-Priorita se řídí kombinací: závažnost × počet zasažených × náklad opravy. Vysoká = regulace
-nebo peníze; střední = analytika a údržba; nízká = hygiena.
+Priority follows the combination severity × number affected × cost of fix. High = regulation or money; medium
+= analytics and maintenance; low = hygiene.
 
-Ten vzorec je hrubý filtr, ne verdikt. Nad ním rozhoduje **matice přínos × náklad**: nahoru
-patří **quick wins** (velký dopad, levná oprava), teprve za nimi architektonické projekty.
-A výsledek konfrontuj se subjektivním šetřením — atribut s vysokou chybovostí, který v praxi
-nikdo nepoužívá, má nízkou prioritu bez ohledu na to, co spočítal vzorec.
+That formula is a coarse filter, not a verdict. Above it decides the **benefit × cost matrix**: **quick wins**
+(high impact, cheap fix) go to the top, architectural projects after them. And confront the result with the
+subjective assessment: an attribute with a high error rate that nobody uses in practice has low priority
+regardless of what the formula computed.
 
-Ke strategickým doporučením patří **přiřazení rolí** (data owner, data steward, data product
-manager) na procesy a datové produkty, ideálně RACI maticí. Doporučení bez jména je přání.
+The strategic recommendations include **assigning roles** (data owner, data steward, data product manager) to
+processes and data products, ideally with a RACI matrix. A recommendation without a name is a wish.
 
-**Ke každému opatření patří prevence.** Oprava dat bez opravy vstupní kontroly znamená, že se
-defekt vrátí — a to napiš explicitně: „retrospektivně prověřit 23 477 smluv **a** zavést
-aplikační kontrolu `CNTR_VALIDFROM ∈ [PRODUCT.VALID_FROM, PRODUCT.VALID_TO]`". Prevenci
-detailně řeší `dq-strazce`.
+**Every action comes with prevention.** Fixing the data without fixing the input control means the defect
+returns, and say so explicitly: "retrospectively review 23,477 contracts **and** introduce the application
+control `CNTR_VALIDFROM ∈ [PRODUCT.VALID_FROM, PRODUCT.VALID_TO]`". Prevention in detail is handled by
+`dq-guard`.
 
-## Sekce, které se vyplatí nevynechat
+## Sections worth keeping
 
-- **Mezery oproti předpokládaným kontrolám** — co se očekávalo, že existuje, a neexistuje.
-- **Předměty mimo rozsah této verze** — poctivé vymezení, co se neauditovalo.
-- **Přílohy** — kompletní seznam chybějících FK; návrh číselníku pro atribut, který žádný nemá.
+- **Gaps against expected controls**: what was expected to exist and does not.
+- **Items out of scope of this version**: an honest statement of what was not audited.
+- **Appendices**: the complete list of missing FKs; a proposed code list for an attribute that has none.
 
-Ten poslední bod je vlastní žánr nálezu: atribut vyplňovaný bez existující autoritativní sady
-hodnot. Nejde jen o neúplnost — i kdyby se doplnil, není proti čemu ho validovat. Návrh
-číselníku patří do přílohy.
+That last point is a kind of finding of its own: an attribute filled in without any existing authoritative
+set of values. It is not only incompleteness; even if it were filled, there is nothing to validate it against.
+The code list proposal belongs in the appendix.

@@ -14,7 +14,7 @@ The method comes from the course 4IZ562 Data Quality Management at Prague Univer
 ```
 dq-profiler > dq-validator > dq-auditor                     audit
      |
-dq-parser > dq-standardizator > dq-adresar > dq-imputator > dq-deduplikator > dq-strazce
+dq-parser > dq-standardizer > dq-address > dq-imputer > dq-deduplicator > dq-guard
                                                             remediation
 ```
 
@@ -25,11 +25,11 @@ dq-parser > dq-standardizator > dq-adresar > dq-imputator > dq-deduplikator > dq
 | `dq-validator` | Checks across six dimensions, checksum validators, writes the score to a metadata repository. |
 | `dq-auditor` | Finding catalogue, root cause, cost of poor quality and return on investment, legal context, priority. |
 | `dq-parser` | Splits composite values, such as house number out of street, municipality against district, person name. |
-| `dq-standardizator` | Canonical form, link to reference dictionaries, display value against match key. |
-| `dq-adresar` | Link to the address registry, match code, accuracy hierarchy, match rate. |
-| `dq-imputator` | Fills missing values by source reliability, and states when not to impute. |
-| `dq-deduplikator` | Match code, clusters, survivor selection, golden record, household. |
-| `dq-strazce` | Data types, foreign key and check constraints, quality firewall, monitoring, data governance. |
+| `dq-standardizer` | Canonical form, link to reference dictionaries, display value against match key. |
+| `dq-address` | Link to the address registry, match code, accuracy hierarchy, match rate. |
+| `dq-imputer` | Fills missing values by source reliability, and states when not to impute. |
+| `dq-deduplicator` | Match code, clusters, survivor selection, golden record, household. |
+| `dq-guard` | Data types, foreign key and check constraints, quality firewall, monitoring, data governance. |
 
 The order matters. Deduplication before standardization does not merge `MuDr` with `MUDr.`. Constraints before remediation fail.
 
@@ -73,7 +73,7 @@ The domain validators for birth number, company identifier, postal code, address
 
 ## Limits
 
-The skills contain documentation and SQL. They ship no runnable code, and the skill files themselves are written in Czech.
+The skills contain documentation and SQL. They ship no runnable code. Example values (names, addresses, registries) are Czech because the source audit was; the rules around them are not.
 
 ## Development
 
@@ -87,6 +87,10 @@ frontmatter parses, that the name matches its directory, that the description is
 long enough to be matched on, and that every pipeline step is named in
 `dq-pipeline`. A skill with broken frontmatter is not loaded and not reported,
 so nothing tells you a step is missing until the pipeline silently skips it.
+
+## Related
+
+[da-skills](https://github.com/koprjaa/da-skills) designs or reviews the data architecture these checks run against. Its steps hand off to `dq-profiler`, `dq-deduplicator`, and `dq-guard`.
 
 ## License
 
