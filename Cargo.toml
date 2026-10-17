@@ -2,7 +2,7 @@
 name = "dq-skills"
 version = "1.0.0"
 edition = "2024"
-description = "Ten Claude Code skills that audit and clean data quality in any SQL database: profiling, quality metrics, audit report, standardization, imputation, deduplication, and defect prevention."
+description = "Ten Claude Code skills that audit and clean data quality in any SQL database, from profiling and quality metrics to the audit report, standardization, imputation, deduplication and defect prevention."
 license = "MIT"
 repository = "https://github.com/koprjaa/dq-skills"
 keywords = ["claude-code", "skills", "data-quality", "deduplication", "sql"]

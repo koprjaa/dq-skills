@@ -1,13 +1,13 @@
 # dq-skills
 
-Ten Claude Code skills that audit and clean data quality in any SQL database: profiling, quality metrics, audit report, standardization, imputation, deduplication, and defect prevention.
+Ten Claude Code skills that audit and clean data quality in any SQL database, from profiling and quality metrics to the audit report, standardization, imputation, deduplication and defect prevention.
 
 ![claude-code](https://img.shields.io/badge/Claude%20Code-skills-D97757?style=flat-square)
 ![license](https://img.shields.io/badge/license-MIT-A31F34?style=flat-square)
 ![status](https://img.shields.io/badge/status-active-22863A?style=flat-square)
 [![ci](https://github.com/koprjaa/dq-skills/actions/workflows/ci.yml/badge.svg)](https://github.com/koprjaa/dq-skills/actions/workflows/ci.yml)
 
-The method comes from the course 4IZ562 Data Quality Management at Prague University of Economics and Business, and from an audit of 23 insurance company tables with 64 findings, a cost of poor quality estimate, and the corrective actions that followed. The skills are written without a domain. The defect patterns apply the same way to an online shop, a hospital, or a state registry.
+The method comes from the course 4IZ562 Data Quality Management at Prague University of Economics and Business, and from an audit of 23 insurance company tables with 64 findings, a cost of poor quality estimate, and the corrective actions that followed. Nothing in the skills is specific to insurance, and the same defect patterns turn up in an online shop or a public registry.
 
 ## Pipeline
 
@@ -31,7 +31,7 @@ dq-parser > dq-standardizer > dq-address > dq-imputer > dq-deduplicator > dq-gua
 | `dq-deduplicator` | Match code, clusters, survivor selection, golden record, household. |
 | `dq-guard` | Data types, foreign key and check constraints, quality firewall, monitoring, data governance. |
 
-The order matters. Deduplication before standardization does not merge `MuDr` with `MUDr.`. Constraints before remediation fail.
+Run the steps in this order. Deduplicating before standardization leaves `MuDr` and `MUDr.` as two people, and constraints added before remediation fail on the existing data.
 
 ## Install
 
@@ -68,12 +68,12 @@ The domain validators for birth number, company identifier, postal code, address
 - No claim about quality without a query and a number.
 - Every number needs its universe. "5,328 missing" alone means nothing.
 - Never overwrite the original column. Remediation writes to `_STD` columns.
-- A cross check turns a suspicion into evidence.
+- A suspicion becomes a finding once a second, independent query confirms it.
 - Fixing the data without fixing the input control means the defect returns.
 
 ## Limits
 
-The skills contain documentation and SQL. They ship no runnable code. Example values (names, addresses, registries) are Czech because the source audit was; the rules around them are not.
+The skills contain documentation and SQL. They ship no runnable code. Example values such as names, addresses and registries are Czech because the source audit was Czech.
 
 ## Development
 
@@ -83,11 +83,7 @@ cargo clippy --all-targets -- -D warnings
 cargo test
 ```
 
-The suite checks the shape of each skill file rather than its content: that the
-frontmatter parses, that the name matches its directory, that the description is
-long enough to be matched on, and that every pipeline step is named in
-`dq-pipeline`. A skill with broken frontmatter is not loaded and not reported,
-so nothing tells you a step is missing until the pipeline silently skips it.
+The tests check the shape of each skill file. The frontmatter has to parse, the name has to match the directory, and the description has to be long enough to match on and end with a keyword list. Every pipeline step has to appear in `dq-pipeline`. Claude Code skips a skill with broken frontmatter without an error, so without these tests a missing step shows up only when the pipeline runs past it.
 
 ## Related
 
