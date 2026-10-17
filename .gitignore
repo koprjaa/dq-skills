@@ -1,6 +1,1 @@
-__pycache__/
-*.pyc
-.pytest_cache/
-.ruff_cache/
-.venv/
-uv.lock
+/target/

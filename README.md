@@ -1,6 +1,6 @@
 # dq-skills
 
-Ten Claude Code skills that audit and clean data quality in any SQL database. They cover profiling an unknown database, measuring quality metrics, writing the audit report, then standardizing, imputing, deduplicating, and preventing repeat defects.
+Ten Claude Code skills that audit and clean data quality in any SQL database: profiling, quality metrics, audit report, standardization, imputation, deduplication, and defect prevention.
 
 ![claude-code](https://img.shields.io/badge/Claude%20Code-skills-D97757?style=flat-square)
 ![license](https://img.shields.io/badge/license-MIT-A31F34?style=flat-square)
@@ -78,8 +78,9 @@ The skills contain documentation and SQL. They ship no runnable code. Example va
 ## Development
 
 ```bash
-uv run --extra dev ruff check .
-uv run --extra dev pytest -q
+cargo fmt --check
+cargo clippy --all-targets -- -D warnings
+cargo test
 ```
 
 The suite checks the shape of each skill file rather than its content: that the

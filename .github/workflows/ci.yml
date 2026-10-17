@@ -13,15 +13,19 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
-        python-version: ["3.10", "3.11", "3.12"]
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@v3
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
 
-      - name: Lint (ruff)
-        run: uv run --python ${{ matrix.python-version }} --extra dev ruff check .
+      - name: Format
+        run: cargo fmt --check
 
-      - name: Test (pytest)
-        run: uv run --python ${{ matrix.python-version }} --extra dev pytest -q
+      - name: Lint
+        run: cargo clippy --all-targets -- -D warnings
+
+      - name: Test
+        run: cargo test
