@@ -191,15 +191,28 @@ fn the_pipeline_order_is_documented_in_the_entry_point() {
 }
 
 /// Each step has to say what runs before and after it, or the order is lost.
+/// Naming the entry point or another step is the proof; a bare "dq-" prefix is not.
 #[test]
 fn a_skill_names_its_place_in_the_pipeline() {
     let bad = skills()
         .into_iter()
+        .filter(|s| s.name != ENTRY)
         .filter(|s| {
             let t = s.text.to_lowercase();
-            !t.contains("pipeline") && !t.contains("dq-")
+            !t.contains(ENTRY) && !PIPELINE.iter().any(|p| *p != s.name && t.contains(p))
         })
         .map(|s| s.name)
         .collect();
-    assert_all("no pipeline reference", bad);
+    assert_all("no reference to another step or the entry point", bad);
+}
+
+/// A skill directory missing from PIPELINE would escape every check above.
+#[test]
+fn every_skill_is_a_pipeline_step_or_the_entry_point() {
+    let bad = skills()
+        .into_iter()
+        .filter(|s| s.name != ENTRY && !PIPELINE.contains(&s.name.as_str()))
+        .map(|s| s.name)
+        .collect();
+    assert_all("not listed in PIPELINE", bad);
 }
