@@ -206,3 +206,14 @@ nearest wrong value.
 - Definitions of monitored metrics, thresholds and alert recipients.
 - A governance proposal: roles, ownership, the code list change process.
 - **A list of measures that could not be deployed and what blocks them**: input for the next round.
+
+## Common mistakes
+
+| Mistake | Consequence | Instead |
+|---|---|---|
+| Adding constraints before remediation | they fail on existing data | deploy bottom up, after the clean-up |
+| A few FKs picked at random | integrity stays broken | the complete missing-FK list from `dq-profiler` |
+| Adding an FK without deciding about violations | an irreversible deletion or reassignment nobody chose | decide (delete, reassign, extend the code list) and record it in the report |
+| A firewall that only says "invalid value" | operators work around it with placeholders | reject with a reason and offer the correct value |
+| Alerting on absolute values | normal levels page people, real drops do not | alert on change (PSI, control chart) |
+| Controls with no owner | everything returns to the old state within a year | data owner and steward per domain |

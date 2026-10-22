@@ -109,6 +109,58 @@ fn a_skill_opens_with_frontmatter() {
     );
 }
 
+/// Fields outside the Agent Skills spec are ignored, so a misplaced one fails silently.
+#[test]
+fn the_frontmatter_uses_only_known_fields() {
+    const ALLOWED: &[&str] = &[
+        "name",
+        "description",
+        "allowed-tools",
+        "compatibility",
+        "license",
+        "metadata",
+        "user-invocable",
+    ];
+    let bad = skills()
+        .iter()
+        .filter_map(|s| {
+            let (fields, _) = split(&s.text)?;
+            let extra: Vec<&str> = fields
+                .keys()
+                .map(String::as_str)
+                .filter(|k| !ALLOWED.contains(k))
+                .collect();
+            (!extra.is_empty()).then(|| format!("{} ({})", s.name, extra.join(", ")))
+        })
+        .collect();
+    assert_all("unknown frontmatter field", bad);
+}
+
+/// allowed-tools pre-approves tools without a permission prompt, it does not restrict them.
+#[test]
+fn no_skill_pre_approves_tools() {
+    assert_all(
+        "allowed-tools set",
+        skills()
+            .into_iter()
+            .filter(|s| !field(s, "allowed-tools").is_empty())
+            .map(|s| s.name)
+            .collect(),
+    );
+}
+
+/// A step without its mistakes table hides the rules it is easiest to break.
+#[test]
+fn every_step_lists_common_mistakes() {
+    let bad = skills()
+        .into_iter()
+        .filter(|s| PIPELINE.contains(&s.name.as_str()))
+        .filter(|s| !s.text.contains("\n## Common mistakes"))
+        .map(|s| s.name)
+        .collect();
+    assert_all("no ## Common mistakes section", bad);
+}
+
 /// Claude Code resolves a skill by directory, so a mismatch is unreachable.
 #[test]
 fn the_name_matches_the_directory() {

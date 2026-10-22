@@ -194,3 +194,14 @@ each: criterion, query, measured number, sample, one-sentence interpretation.
 
 The interpretation must be concrete. "Runs SQL" or "processes data" is not an interpretation; write what is
 being validated, how much of it failed and what it means for the business.
+
+## Common mistakes
+
+| Mistake | Consequence | Instead |
+|---|---|---|
+| A count without its universe | a number nobody can interpret | absolute count + percentage + out of what, with the entity-type filter |
+| `NOT IN (SELECT …)` for orphans | one NULL empties the result and the check silently passes | anti-join `LEFT JOIN … WHERE key IS NULL` |
+| `CURDATE()` inside a metric | the score changes on rerun | a fixed snapshot date |
+| Counting placeholders as syntax errors | one gap reported twice, under the wrong characteristic | treat them as missing values under completeness |
+| Writing 0 for a characteristic that does not apply | the aggregate score is dragged down by something never measured | leave NULL and say why |
+| Averaging characteristics into an attribute score, or one score for the whole database | a critical defect disappears in clean columns | minimum per attribute, weighted average per use |

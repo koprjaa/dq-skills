@@ -172,3 +172,14 @@ silent swap and spreads it across the whole table.
 - The parse rate for each part (`% of rows with a non-empty result`).
 - **An error table** of rows the parser did not split, with the reason for each: the audit trail of why a
   record did not pass. Input for manual review or for the decision "this is out of scope".
+
+## Common mistakes
+
+| Mistake | Consequence | Instead |
+|---|---|---|
+| Overwriting the original column | no before/after and no way back when the parser is wrong | write to `_STD` / `_NUM1` / `_NUM2` |
+| Guessing when the pattern is unclear | silent damage in a share of rows | leave NULL, count the remainder, log the reason in the error table |
+| Fixing values while splitting | no audit trail of what changed a value | the parser splits and flags; fixes are registered rules in `dq-standardizer` |
+| Splitting municipality names on every dash | `Frýdek-Místek` becomes two places | verify the split against the municipality registry, restore the original if it fails |
+| Force-parsing P.O. boxes | valid addresses are reported as errors | flag them and exclude them from the match rate |
+| A blind `STR_TO_DATE` on text dates | a day/month swap spreads across the table | check the order of positions first |

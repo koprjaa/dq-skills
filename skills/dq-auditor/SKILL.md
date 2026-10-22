@@ -28,6 +28,11 @@ Gaps against expected controls · Out of scope · Audit limitations
 Appendices (missing FKs, proposals for new code lists)
 ```
 
+**Personal data in the report is masked, every time.** A finding names a record by its ID and shows the
+pattern, not the person: `C004 (T*** T***)`, birth number `85****1234`, e-mail `d***@example.org`. This
+holds for the finding table, the interpretation paragraphs, the examples and the summary. Writing "personal
+data is masked" at the top and then quoting a full name below is the usual way this rule breaks.
+
 **Write the executive summary last, but it is read first.** It must contain one money figure, one deadline
 and one recommendation. Not a list of tables. It fits on **one page**; you are writing for the board, not
 for the DBA.
@@ -231,3 +236,16 @@ control `CNTR_VALIDFROM ∈ [PRODUCT.VALID_FROM, PRODUCT.VALID_TO]`". Prevention
 That last point is a kind of finding of its own: an attribute filled in without any existing authoritative
 set of values. It is not only incompleteness; even if it were filled, there is nothing to validate it against.
 The code list proposal belongs in the appendix.
+
+## Common mistakes
+
+| Mistake | Consequence | Instead |
+|---|---|---|
+| Measuring before the usage matrix and impact model exist | impact is fitted to whatever the data showed | steps 5 and 6 before profiling |
+| An executive summary that lists tables | the board gets no decision | one page: one money figure, one deadline, one recommendation |
+| ROI from the sum of all estimated losses | the number falls apart at the first challenge | ROI from the most certain stream only, assumptions listed |
+| Root cause that a query can fix | the defect returns with the next load | carry "5 Whys" to a cause in the process, with evidence and architecture reference |
+| A recommendation without prevention or an owner | a clean-up that does not last, a wish nobody acts on | every action paired with an input control and a named role |
+| Showing conclusions to the board first | surprises, and findings that had a business explanation | discuss them with the affected managers beforehand |
+| Full names or identifiers in findings | personal data leaves the database in the report | record ID plus masked value, in every section |
+| A summary number that differs from the finding table | the reader cannot tell which one is right | write the summary last, from the finding table |

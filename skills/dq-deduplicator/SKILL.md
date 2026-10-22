@@ -298,3 +298,14 @@ A denormalised table, one row per input record, plus:
 
 Summary for the report: number of rows, unique entities (MCODE), survivors, duplicates (rows − survivors),
 households, match rate to the registry, share of valid identifiers, share of filled contacts.
+
+## Common mistakes
+
+| Mistake | Consequence | Instead |
+|---|---|---|
+| Deduplicating unstandardised data | a falsely low duplicate count | run after parser, standardiser and imputer |
+| MCODE without a level prefix, or NULL for records without a key | collisions between levels; all unidentifiable records in one cluster | prefix per level, `SINGLE` + PK as fallback |
+| Display values in the key | `Nováková` and `NOVAKOVA` stay apart | build the key from `_MATCH` variants |
+| Narrowing the grey zone to get more merges | false merges, a confidentiality and GDPR incident | escalate uncertain matches to a data steward |
+| Deleting duplicates | evidence lost, a wrong merge cannot be undone | flag them (`SURV_RECORD_IND`) or link them with a match probability |
+| A survivor score without a deterministic tiebreak | results differ between runs | `PK` as the last sort key |

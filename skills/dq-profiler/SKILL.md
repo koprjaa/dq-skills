@@ -208,3 +208,14 @@ produces a basic table profile with one command (distributions, missing values, 
 a first pass, not as the output; it will not interpret the data or choose the universe for you. Named
 tools in the field: Ataccama DQ Analyzer, DataCleaner, OpenRefine, and for continuous validation in a
 pipeline, among open source tools, Great Expectations, Soda Core, Deequ or dbt tests.
+
+## Common mistakes
+
+| Mistake | Consequence | Instead |
+|---|---|---|
+| Sorting tables by their `REF_`/`LOV_` prefix | a code list is used as a registry yardstick, or the other way round | classify each table by its content (Step 1) |
+| Taking `TABLE_ROWS` as the row count | an InnoDB estimate ends up in the metrics | `COUNT(*)` for every number that is reported |
+| Treating an empty FK list as a technicality | integrity rests on an application that demonstrably fails | record it as a critical finding and hand the missing-FK list to `dq-guard` |
+| Reading a numeric column by its mean | one extreme drags the picture anywhere | quantiles, spread and a trimmed mean (Step 4) |
+| Calling every outlier an error | the largest client in the portfolio is reported as a typo | domain judgement first, then a method chosen by the distribution |
+| Skipping the look at sample rows | findings a single glance would show stay hidden | `SELECT * … LIMIT 5` per table (Step 6) |

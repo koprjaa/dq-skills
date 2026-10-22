@@ -176,3 +176,14 @@ addresses drop out of the pivot and the golden record has no permanent address.
 - `dq-imputer`: looks up a missing postcode or municipality from the address code.
 - `dq-deduplicator`: the address code is part of the household key.
 - Deliverability flag = the address has a building-level code and is not a P.O. box.
+
+## Common mistakes
+
+| Mistake | Consequence | Instead |
+|---|---|---|
+| Matching before profiling the registry | validation against an abolished or incomplete source | check coverage, coordinates, keys and scope gaps first |
+| A different normalisation recipe on each side | the match code never meets | one recipe for both sides; when the hash join returns nothing, check collation |
+| A street or municipality code in the building field | the address points to another building | one column per level plus `ADDR_MATCH_LEVEL` |
+| Reporting P.O. boxes as unmatched errors | a limit of the source is reported as bad data | report them as out of the registry's scope |
+| Raising the match rate several steps at once | a jump that may be matching nonsense | one change at a time, measure and check a sample |
+| Pivoting before deciding unknown address types | a large share of addresses drops out of the golden record | remap or extend the code list before the pivot |

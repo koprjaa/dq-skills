@@ -200,3 +200,14 @@ period or one channel shows up immediately.
 - **A before/after table per attribute**: completeness before, after, how much was filled by which method, how
   much remains and why it could not be done.
 - A list of collisions (stored ≠ derived value) → back to `dq-auditor` as an internal consistency finding.
+
+## Common mistakes
+
+| Mistake | Consequence | Instead |
+|---|---|---|
+| Deriving from a value that only passed the format | an invented date with the face of a fact | derive only from checksum-valid sources |
+| Overwriting a filled value that disagrees | a consistency defect is erased | fill NULLs only; report the collision to `dq-auditor` |
+| Imputed values without an origin flag | measured and inferred data cannot be told apart | `_IMPUTED` flag or a separate column |
+| Mean or median imputation in production | a false peak, lower variance, drifting correlations | methods 1–4 in production, statistics only in the analytical layer with a flag |
+| Reading a better model metric after imputation as success | artificial multicollinearity is mistaken for signal | treat it as a warning |
+| A fixed century pivot | clients born in 2074 | decide against the snapshot date, then run the sanity check |

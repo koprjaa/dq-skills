@@ -269,3 +269,14 @@ write (that belongs in `dq-guard`).
 - **A before/after table for every attribute**: how many values changed, how much the match with the registry
   rose, how many remained outside and why.
 - A list of values standardisation did not resolve: input for extending the registry or for manual review.
+
+## Common mistakes
+
+| Mistake | Consequence | Instead |
+|---|---|---|
+| Standardising before placeholders are NULL | `9999999999` becomes a valid identifier, `NA` a surname | convert placeholders to NULL first and count them |
+| An ad hoc `UPDATE` instead of a registered rule | nobody can trace what changed a value | every fix has a name, pattern, row count and MDR reference |
+| One form for display and matching | correspondence addressed without diacritics, or dedup that misses duplicates | `_STD` for display, `_MATCH` for comparison |
+| A display fix that changes the match key | clusters reshuffle in deduplication | the match key stays stable |
+| A blanket replace that is not proven systematic | falsely valid values | verify the pattern by frequency first |
+| Completing a truncated postcode by guessing | an invented digit | look it up in the registry (`dq-imputer`) |
