@@ -26,8 +26,9 @@ them), so a skill that runs SQL would run it against someone's database without 
 
 **Verify, do not write from memory.** The methodology comes from the course 4IZ562 and the frameworks
 listed under "Methodological grounding" in `dq-pipeline` (DAMA-DMBOK, TDQM, TIQM, Ten Steps, ISO 8000,
-ISO 25012). There is no RAG corpus for this course yet, so check a claim against those sources or mark
-it as not verified.
+ISO 25012). The course lectures are in a NotebookLM notebook ("4IZ562 - Řízení datové kvality", queried
+through the NotebookLM MCP with `ask_question`); ask it before guessing what the course expects. There is
+no local RAG corpus for this course. A claim found in neither place is marked as not verified.
 
 Keep `SKILL.md` lean. When a skill grows past about 200 lines, move long tables and worked examples into
 `references/*.md` and link them from the body.
