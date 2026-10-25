@@ -9,7 +9,7 @@
 // Jan Alexandr Kopřiva
 // jan.alexandr.kopriva@gmail.com
 //
-// License: MIT
+// License: AGPL-3.0-or-later
 //
 
 //! A skill with broken frontmatter is not loaded and not reported, so nothing

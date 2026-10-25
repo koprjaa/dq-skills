@@ -3,7 +3,7 @@
 Claude Code skills for auditing and cleaning data quality in SQL databases.
 
 [![ci](https://github.com/koprjaa/dq-skills/actions/workflows/ci.yml/badge.svg)](https://github.com/koprjaa/dq-skills/actions/workflows/ci.yml)
-![license](https://img.shields.io/badge/license-MIT-A31F34?style=flat-square)
+![license](https://img.shields.io/badge/license-AGPL--3.0-A31F34?style=flat-square)
 
 Based on the course 4IZ562 Data Quality Management at Prague University of Economics and Business.
 
@@ -41,4 +41,4 @@ See also [da-skills](https://github.com/koprjaa/da-skills) for designing the dat
 
 ## License
 
-[MIT](LICENSE)
+[AGPL-3.0-or-later](LICENSE)
