@@ -1,6 +1,6 @@
 ---
 name: dq-auditor
-description: The data quality auditor's report. A finding catalogue with severity and business impact, root cause analysis, quantification of the cost of poor quality (COPQ) and the ROI of remediation, the data usage matrix, the legal context (GDPR, AML, Solvency II), and prioritised corrective actions. Third step of the DQ pipeline, after dq-validator. Use it when someone wants to "write the audit report", "write up the findings", "quantify the impact of bad data", "compute COPQ or ROI", "prioritise fixes", "root cause analysis". Keywords: audit report, findings, COPQ, ROI, root cause, usage matrix, business impact, prioritisation.
+description: "The data quality auditor's report. A finding catalogue with severity and business impact, root cause analysis, quantification of the cost of poor quality (COPQ) and the ROI of remediation, the data usage matrix, the legal context (GDPR, AML, Solvency II), and prioritised corrective actions. Third step of the DQ pipeline, after dq-validator. Use it when someone wants to \"write the audit report\", \"write up the findings\", \"quantify the impact of bad data\", \"compute COPQ or ROI\", \"prioritise fixes\", \"root cause analysis\". Keywords: audit report, findings, COPQ, ROI, root cause, usage matrix, business impact, prioritisation."
 ---
 
 # Auditor: report, impact, recommendations

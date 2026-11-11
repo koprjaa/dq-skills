@@ -1,6 +1,6 @@
 ---
 name: dq-standardizer
-description: Standardises data into canonical form and links it to reference dictionaries. Titles, first and last names against a registry, national and company IDs, postcode, e-mail, phone, diacritics, case, padding, placeholders to NULL, the convention of _STD columns and match keys. Second remediation step, after dq-parser, before dq-imputer. Use it when someone needs to "unify how values are written", "standardise values", "link to a code list", "normalise names or titles", "clean up e-mails and phones". Keywords: standardisation, unification, normalisation, canonical form, reference dictionary, diacritics, match key, _STD columns, value cleansing.
+description: "Standardises data into canonical form and links it to reference dictionaries. Titles, first and last names against a registry, national and company IDs, postcode, e-mail, phone, diacritics, case, padding, placeholders to NULL, the convention of _STD columns and match keys. Second remediation step, after dq-parser, before dq-imputer. Use it when someone needs to \"unify how values are written\", \"standardise values\", \"link to a code list\", \"normalise names or titles\", \"clean up e-mails and phones\". Keywords: standardisation, unification, normalisation, canonical form, reference dictionary, diacritics, match key, _STD columns, value cleansing."
 ---
 
 # Standardiser: canonical form

@@ -1,6 +1,6 @@
 ---
 name: dq-parser
-description: Parsing and atomising data. Splits composite values into dedicated columns (house numbers out of the street, municipality vs. city district, first and middle name, title from name), fixes interleaved spaces and encoding errors, extracts patterns with regex. First remediation step, after the audit, before dq-standardizer. Use it when "house numbers are merged into the street", "composite values sit in one field", "atomicity is broken", "the address or name needs parsing". Keywords: parsing, atomisation, atomicity, address splitting, house number, regexp_substr, split, extraction.
+description: "Parsing and atomising data. Splits composite values into dedicated columns (house numbers out of the street, municipality vs. city district, first and middle name, title from name), fixes interleaved spaces and encoding errors, extracts patterns with regex. First remediation step, after the audit, before dq-standardizer. Use it when \"house numbers are merged into the street\", \"composite values sit in one field\", \"atomicity is broken\", \"the address or name needs parsing\". Keywords: parsing, atomisation, atomicity, address splitting, house number, regexp_substr, split, extraction."
 ---
 
 # Parser: atomisation

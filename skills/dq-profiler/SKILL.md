@@ -1,6 +1,6 @@
 ---
 name: dq-profiler
-description: Technical profiling of a database. Table inventory, structure and data types, collation, PK/FK/indexes, frequency distributions, samples, and detection of defect patterns (blanket constants, sentinel values, padding, truncated values, orphan ID ranges). The first step of the DQ pipeline, before dq-validator. Use it when someone wants to "look at the database", "find out what is in this data", "profiling", "data exploration", "what is wrong with this database". Keywords: profiling, data profiling, inventory, table structure, collation, value distribution, database exploration.
+description: "Technical profiling of a database. Table inventory, structure and data types, collation, PK/FK/indexes, frequency distributions, samples, and detection of defect patterns (blanket constants, sentinel values, padding, truncated values, orphan ID ranges). The first step of the DQ pipeline, before dq-validator. Use it when someone wants to \"look at the database\", \"find out what is in this data\", \"profiling\", \"data exploration\", \"what is wrong with this database\". Keywords: profiling, data profiling, inventory, table structure, collation, value distribution, database exploration."
 ---
 
 # Profiler: technical profiling

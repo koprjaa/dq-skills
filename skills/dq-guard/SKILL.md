@@ -1,6 +1,6 @@
 ---
 name: dq-guard
-description: Preventing defects and monitoring data quality. Foreign keys and CHECK constraints, fixing data types, a DQ firewall at input, continuous measurement of metrics with alerting, the metadata repository, data contracts with SLAs and SLIs, and data governance (data ownership, stewards, data catalogue, governance bodies, maturity model). The last step of the DQ pipeline, after dq-deduplicator. Use it when someone wants to "stop errors from coming back", "add input controls", "set up data quality monitoring", "add FKs and constraints", "data governance". Keywords: prevention, DQ firewall, constraint, foreign key, monitoring, alerting, data governance, data steward, data catalogue, observability, data contract, SLA, SLI, maturity model.
+description: "Preventing defects and monitoring data quality. Foreign keys and CHECK constraints, fixing data types, a DQ firewall at input, continuous measurement of metrics with alerting, the metadata repository, data contracts with SLAs and SLIs, and data governance (data ownership, stewards, data catalogue, governance bodies, maturity model). The last step of the DQ pipeline, after dq-deduplicator. Use it when someone wants to \"stop errors from coming back\", \"add input controls\", \"set up data quality monitoring\", \"add FKs and constraints\", \"data governance\". Keywords: prevention, DQ firewall, constraint, foreign key, monitoring, alerting, data governance, data steward, data catalogue, observability, data contract, SLA, SLI, maturity model."
 ---
 
 # Guard: prevention and monitoring

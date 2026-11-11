@@ -1,6 +1,6 @@
 ---
 name: dq-pipeline
-description: Entry point and shared standard of the data quality pipeline for any database (MySQL, PostgreSQL, SQL Server, Oracle, SQLite, DuckDB). Holds the quality dimensions, the finding format, the severity scale, mapping a schema to roles, and how to port the SQL and the domain rules. Use it whenever someone wants to "audit a database", "check data quality", "clean up the database", "find errors in the data", or when you do not know which pipeline step comes first. Keywords: data quality audit, data quality, DQ, profiling, audit report, corrective actions, data cleansing.
+description: "Entry point and shared standard of the data quality pipeline for any database (MySQL, PostgreSQL, SQL Server, Oracle, SQLite, DuckDB). Holds the quality dimensions, the finding format, the severity scale, mapping a schema to roles, and how to port the SQL and the domain rules. Use it whenever someone wants to \"audit a database\", \"check data quality\", \"clean up the database\", \"find errors in the data\", or when you do not know which pipeline step comes first. Keywords: data quality audit, data quality, DQ, profiling, audit report, corrective actions, data cleansing."
 ---
 
 # DQ pipeline: map and shared standard

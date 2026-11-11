@@ -1,6 +1,6 @@
 ---
 name: dq-imputer
-description: Fills in missing values. Derivation from another attribute of the same record, aggregation from linked tables, lookup in a reference registry, a default category, statistical and model-based imputation, and above all the rules for when not to impute. Remediation step after dq-address, before dq-deduplicator. Use it when someone wants to "fill in missing values", "derive a date or gender", "impute", "enrich the data from a registry", "what to do with NULLs". Keywords: imputation, missing values, derivation, derived column, lookup, data enrichment, MCAR, MAR, MNAR, missingness mechanism, Buck's method, hot deck.
+description: "Fills in missing values. Derivation from another attribute of the same record, aggregation from linked tables, lookup in a reference registry, a default category, statistical and model-based imputation, and above all the rules for when not to impute. Remediation step after dq-address, before dq-deduplicator. Use it when someone wants to \"fill in missing values\", \"derive a date or gender\", \"impute\", \"enrich the data from a registry\", \"what to do with NULLs\". Keywords: imputation, missing values, derivation, derived column, lookup, data enrichment, MCAR, MAR, MNAR, missingness mechanism, Buck's method, hot deck."
 ---
 
 # Imputer: filling in missing values
