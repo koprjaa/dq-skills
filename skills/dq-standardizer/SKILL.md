@@ -58,12 +58,15 @@ addressed to "Novakova".
 A placeholder is not data. Before you standardise, convert it to NULL; otherwise `9999999999` becomes a "valid
 birth number" for thousands of clients and `NA` becomes a surname.
 
+The original column is never touched: first copy it into `_STD` (`SET <col>_STD = <col>`), then write NULL into `_STD`
+for the placeholders.
+
 ```sql
-UPDATE PART_PARTY SET PARTY_RC = NULL
+UPDATE PART_PARTY SET PARTY_RC_STD = NULL
 WHERE TRIM(LOWER(COALESCE(PARTY_RC,''))) IN
       ('','cizinec','nevyplneno','nevyplněno','9999999999','0000000000');
 
-UPDATE PART_PARTY SET PARTY_FNAME = NULL, PARTY_LNAME = NULL
+UPDATE PART_PARTY SET PARTY_FNAME_STD = NULL, PARTY_LNAME_STD = NULL
 WHERE PARTY_TYPE='C' AND TRIM(UPPER(COALESCE(PARTY_FNAME,''))) IN ('NA','N/A','NULL','.');
 ```
 
@@ -108,9 +111,9 @@ Let only `RC_VALID` into the export and the derived attributes. `RC_USABLE` serv
 inside the pipeline: a readable but checksum-broken birth number still reliably identifies the same person in
 two records, but it must not be published.
 
-The pair of flags is my extension: the stricter variant (and the default in academic methodology) stores only
+The pair of flags is an operating convention, not a standard: the stricter variant (and the default in academic methodology) stores only
 fully valid values in `_STD`. There is no contradiction: an invalid value does not get into `_STD` here either;
-I just keep the information that it is *readable* next to it, because without it you lose part of the dedup
+the information that it is *readable* is just kept next to it, because without it you lose part of the dedup
 signal.
 
 ### Company identifier (IČO)
@@ -239,7 +242,7 @@ Store it as `varchar`, not `integer`: a numeric type kills the leading zero and 
 ## Padding and case
 
 ```sql
-UPDATE <t> SET <col> = NULLIF(TRIM(<col>), '');
+UPDATE <t> SET <col>_STD = NULLIF(TRIM(<col>), '');
 ```
 
 Remove `char(n)` padding globally first, otherwise every later comparison needs `TRIM` and somewhere it gets

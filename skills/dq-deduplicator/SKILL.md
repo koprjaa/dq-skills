@@ -67,7 +67,7 @@ When an unreadable identifier also lacks a derived date, use the original stored
 fallback; it maximises the dedup signal without anything invalid reaching the output.
 
 This is looser than the academic standard, which lets only checksum-valid identifiers into both matching and
-derivation. It is not a contradiction (an invalid value is not published here either), but admit it as your own
+derivation. It is not a contradiction (an invalid value is not published here either), but state it as a project
 choice and show the difference in the number of merges. It is exactly variant A in the key comparison below.
 
 ## Where a deterministic key is not enough

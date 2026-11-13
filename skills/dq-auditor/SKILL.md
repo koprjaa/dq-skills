@@ -100,7 +100,7 @@ row: "Client identification and cross-consistency", "Dead communication channels
 impossible validation", "Orphans and a historical import".
 
 For every major finding add a **cross-check** with the suffix `b` (see `dq-pipeline`). Cross-testing is a
-standard method; the `b` suffix and the three to five paragraphs per domain are my convention, not
+standard method; the `b` suffix and the three to five paragraphs per domain are an operating convention, not
 established notation. Finding `A1` (constant "CZE") is a suspicion; `A1b` (2,633 clients with the literal
 "cizinec" in the birth number and country "CZE" in 100 % of them) is evidence.
 

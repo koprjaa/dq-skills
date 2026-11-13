@@ -189,8 +189,8 @@ period or one channel shows up immediately.
 |---|---|
 | a person or entity identifier | an invented identifier is worse than a missing one; it blocks verification and compliance, and for personal data also runs into GDPR |
 | a value derived from an invalid source | carries the error forward and masks it |
-| a 100 % empty column | there is nothing to derive from; decide between "fill from a registry" and "drop the column" |
-| a missing relationship (orphan) | assigning it to a random parent is fabrication; either look it up or delete it |
+| a 100 % empty column | there is nothing to derive from; decide between "fill from a registry" and "document the column as unused" (dropping it is a separate, approved change) |
+| a missing relationship (orphan) | assigning it to a random parent is fabrication; look it up, or flag it and leave it |
 | a status/termination type with no code list | nothing to validate against; first the code list, then filling |
 | a blanket constant instead of the real value | that is exactly how the original defect arose |
 

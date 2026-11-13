@@ -46,7 +46,7 @@ Full SQL catalogue: `references/checks-sql.md`.
 
 The order is a working sequence (cheap checks before JOINs to a registry), not a norm; nobody prescribes a
 binding order of measurement. Uniqueness is normally measured at the level of whole records through match
-codes; the split into three cuts above is my extension, not a definition.
+codes; the split into three cuts above is an operating convention, not a definition.
 
 ### Code list (LOV): its own quality + how it is used
 

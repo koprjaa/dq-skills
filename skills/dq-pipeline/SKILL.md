@@ -106,7 +106,7 @@ Vocabulary for an academic or audit audience: "finding" = **defect**, **discrepa
 | **Low** | hygiene, cosmetics, naming consistency |
 
 The levels correspond to the priorities in the data usage matrix (Critical / High / Medium / Low). The
-criteria in the right-hand column are my operationalisation; the usual inspiration for a severity scale is
+criteria in the right-hand column are an operating convention, not a standard; the usual inspiration for a severity scale is
 incident classification in customer support, not a fixed industry code list.
 
 ## A cross-check is the most valuable finding
@@ -133,7 +133,7 @@ The skills describe **roles**, not specific tables. Before you start, map the sc
 | **reference registry (REF)** | external authoritative source | address, person and company registries, industry classification, ISO code lists |
 
 The canonical classification (DAMA-DMBOK and others) knows four classes: **master data**, **transactional
-data**, **code lists (LOV)** and **reference data**. Satellites and catalogue are my finer split inside the
+data**, **code lists (LOV)** and **reference data**. Satellites and catalogue are a finer split (an operating convention) inside the
 first two, not standard categories; name them that way in a formal text.
 
 Examples in the other skills come from an insurance audit (`PART_PARTY`, `PARTY_ADDRESS`, `PARTY_CONTACT`,

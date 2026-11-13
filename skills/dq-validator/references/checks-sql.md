@@ -39,8 +39,8 @@ SELECT COUNT(*) companies_without_contact FROM PART_PARTY p
 WHERE p.PARTY_TYPE='C' AND NOT EXISTS (SELECT 1 FROM PARTY_CONTACT c WHERE c.PARTY_ID=p.PARTY_ID);
 ```
 
-A column never filled (100 % NULL) is a finding category of its own: either drop it, or fill it with a
-`NOT NULL` strategy. Do not leave it "unfinished".
+A column never filled (100 % NULL) is a finding category of its own: either document it as unused, or fill it from a
+registry (with a `NOT NULL` strategy); dropping it is a separate, approved change. Do not leave it "unfinished".
 
 ---
 

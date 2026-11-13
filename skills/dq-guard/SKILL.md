@@ -72,7 +72,7 @@ ALTER TABLE PART_PARTY ADD CONSTRAINT ck_rc_format
 Add FKs **as the complete list from the profiler**, not at random. A database where not one of 9 code list and 8
 reference relationships has an FK is not fixed by three constraints.
 
-Before adding an FK, decide what to do with existing violations: delete, reassign, or extend the code list. That
+Before adding an FK, decide what to do with existing violations: move them to a quarantine table, reassign, or extend the code list. That
 decision belongs in the report, because it is irreversible.
 
 A constraint that cannot be introduced is also a result: "an FK on `CNTR_CANCTYPE` cannot be introduced because no
@@ -213,7 +213,7 @@ nearest wrong value.
 |---|---|---|
 | Adding constraints before remediation | they fail on existing data | deploy bottom up, after the clean-up |
 | A few FKs picked at random | integrity stays broken | the complete missing-FK list from `dq-profiler` |
-| Adding an FK without deciding about violations | an irreversible deletion or reassignment nobody chose | decide (delete, reassign, extend the code list) and record it in the report |
+| Adding an FK without deciding about violations | an irreversible deletion or reassignment nobody chose | decide (quarantine table, reassign, extend the code list) and record it in the report |
 | A firewall that only says "invalid value" | operators work around it with placeholders | reject with a reason and offer the correct value |
 | Alerting on absolute values | normal levels page people, real drops do not | alert on change (PSI, control chart) |
 | Controls with no owner | everything returns to the old state within a year | data owner and steward per domain |
